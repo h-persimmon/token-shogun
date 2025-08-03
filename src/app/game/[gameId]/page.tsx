@@ -13,9 +13,18 @@ export default function Page() {
   const [gameStatus, setGameStatus] = useState(gameEngine.getGameStatus());
   const [prompt, setPrompt] = useState("");
 
-  const handleSubmit = () => {
-    // TODO: プロンプト処理を実装
-    console.log("プロンプト送信:", prompt);
+  const handleSubmit = async () => {
+    if (!prompt.trim()) return;
+    
+    try {
+      await gameEngine.processPrompt(prompt);
+      // ゲーム状況を更新
+      setGameStatus(gameEngine.getGameStatus());
+      // プロンプトをクリア
+      setPrompt("");
+    } catch (error) {
+      console.error("プロンプト処理エラー:", error);
+    }
   };
 
   return (

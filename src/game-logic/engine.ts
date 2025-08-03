@@ -1,3 +1,4 @@
+import { OrderService } from "./order/order-service";
 import { StageConfig, stageConfigList } from "./stage/stage";
 import { AllyUnit, EnemyUnit } from "./unit/unit";
 import { UnitService } from "./unit/unit-service";
@@ -6,7 +7,8 @@ import { UnitService } from "./unit/unit-service";
  * ゲームを管理するクラス
  */
 export class GameEngine {
-  private readonly unitFactory: UnitService;
+  private readonly unitService: UnitService;
+  private readonly orderService: OrderService;
   readonly id: string;
   readonly stageConfig: StageConfig;
   readonly enemyUnitList: EnemyUnit[];
@@ -19,7 +21,8 @@ export class GameEngine {
   public constructor(
     stageId: number,
   ) {
-    this.unitFactory = new UnitService();
+    this.unitService = new UnitService();
+    this.orderService = new OrderService(this.unitService);
     this.id = "game-" + Date.now().toString();
     this.stageConfig = stageConfigList.find((stageConfig) => stageConfig.id === stageId)!
     this.enemyUnitList = [];
@@ -31,7 +34,7 @@ export class GameEngine {
    */
   public init() {
     for (const enemyUnitConfig of this.stageConfig.enemyUnitList) {
-      const enemyUnit = this.unitFactory.createEnemyUnit(
+      const enemyUnit = this.unitService.createEnemyUnit(
         enemyUnitConfig.unitTypeId,
         enemyUnitConfig.position
       );
@@ -82,5 +85,14 @@ export class GameEngine {
         currentEvent: unit.currentEvent
       }))
     };
+  }
+
+  /**
+   * プロンプトを処理する（Kiroが生成）
+   * @param prompt ユーザーからのプロンプト
+   * @returns 処理結果
+   */
+  public async processPrompt(prompt: string): Promise<void> {
+    throw new Error("未実装です");
   }
 }

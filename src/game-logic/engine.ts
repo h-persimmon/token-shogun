@@ -38,4 +38,49 @@ export class GameEngine {
       this.enemyUnitList.push(enemyUnit);
     }
   }
+
+  /**
+   * ゲーム状況を取得する（Kiroが生成）
+   * @returns ゲーム状況オブジェクト
+   */
+  public getGameStatus() {
+    return {
+      gameId: this.id,
+      stage: {
+        id: this.stageConfig.id,
+        name: this.stageConfig.name,
+        difficulty: this.stageConfig.difficulty,
+        fieldSize: this.stageConfig.fieldSize,
+        maxTokens: this.stageConfig.maxTokens
+      },
+      enemyUnits: this.enemyUnitList.map(unit => ({
+        id: unit.id,
+        unitType: {
+          id: unit.unitType.id,
+          name: unit.unitType.name,
+          faction: unit.unitType.faction,
+          maxHp: unit.unitType.maxHp,
+          defaultSpeed: unit.unitType.defaultSpeed
+        },
+        position: unit.position,
+        currentHp: unit.currentHp,
+        currentSpeed: unit.currentSpeed,
+        currentEvent: unit.currentEvent
+      })),
+      allyUnits: this.allyUnitList.map(unit => ({
+        id: unit.id,
+        unitType: {
+          id: unit.unitType.id,
+          name: unit.unitType.name,
+          faction: unit.unitType.faction,
+          maxHp: unit.unitType.maxHp,
+          defaultSpeed: unit.unitType.defaultSpeed
+        },
+        position: unit.position,
+        currentHp: unit.currentHp,
+        currentSpeed: unit.currentSpeed,
+        currentEvent: unit.currentEvent
+      }))
+    };
+  }
 }

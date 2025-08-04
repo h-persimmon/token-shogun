@@ -1,5 +1,4 @@
 import { OrderResponseBody } from "@/api-interface/order/response-body";
-import { UnitService } from "../unit/unit-service";
 import { GameEngine } from "../engine";
 import { OrderRequestBody } from "@/api-interface/order/request-body";
 import { headerPrompt, xmlSchema } from "./prompt";
@@ -131,10 +130,78 @@ export class OrderService {
   }
 
   /**
-   * AIから返されたXMLをもとにゲーム内状況を更新する関数
+   * AIから返されたXMLをもとにゲーム内状況を更新する関数（Kiroが生成）
    * @param responseXml AIから返されたXML
    */
   private updateGameStatus(responseXml: string): void {
+    try {
+      // XMLをパースしてDOMオブジェクトに変換
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(responseXml, "text/xml");
+      
+      // パースエラーをチェック
+      const parseError = xmlDoc.querySelector("parsererror");
+      if (parseError) {
+        console.error("XML parse error:", parseError.textContent);
+        return;
+      }
 
+      // orderルート要素を取得
+      const orderElement = xmlDoc.querySelector("order");
+      if (!orderElement) {
+        console.error("order要素が見つかりません");
+        return;
+      }
+
+      // create要素を処理
+      const createElement = orderElement.querySelector("create");
+      if (createElement) {
+        this.processCreateElement(createElement);
+      }
+
+      // update要素を処理（現在のスキーマには含まれていないが、将来の拡張のため）
+      const updateElement = orderElement.querySelector("update");
+      if (updateElement) {
+        // 将来の実装用
+        console.log("update要素が見つかりましたが、現在は未実装です");
+      }
+    } catch (error) {
+      console.error("XML処理中にエラーが発生しました:", error);
+    }
+  }
+
+  /**
+   * create要素を処理してユニットを作成する関数（Kiroが生成）
+   * @param createElement create要素
+   */
+  private processCreateElement(createElement: Element): void {
+    const unitElements = createElement.querySelectorAll("unit");
+    
+    for (const unitElement of unitElements) {
+      const unitTypeIdElement = unitElement.querySelector("unitTypeId");
+      if (!unitTypeIdElement) {
+        console.error("unitTypeId要素が見つかりません");
+        continue;
+      }
+
+      const unitTypeId = unitTypeIdElement.textContent?.trim();
+      if (!unitTypeId) {
+        console.error("unitTypeIdが空です");
+        continue;
+      }
+
+      // 仮実装：適当な座標でユニットを作成
+      const position = {
+        x: Math.floor(Math.random() * 10),
+        y: Math.floor(Math.random() * 10)
+      };
+
+      try {
+        this.gameEngine.createAllyUnit(unitTypeId, position);
+        console.log(`味方ユニット ${unitTypeId} を座標 (${position.x}, ${position.y}) に作成しました`);
+      } catch (error) {
+        console.error(`ユニット作成エラー (${unitTypeId}):`, error);
+      }
+    }
   }
 }

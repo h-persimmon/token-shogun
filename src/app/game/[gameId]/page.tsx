@@ -17,7 +17,7 @@ export default function Page() {
     if (!prompt.trim()) return;
     
     try {
-      await gameEngine.processPrompt(prompt);
+      await gameEngine.order(prompt);
       // ゲーム状況を更新
       setGameStatus(gameEngine.getGameStatus());
       // プロンプトをクリア

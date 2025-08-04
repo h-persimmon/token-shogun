@@ -1,4 +1,5 @@
 import { UNIT } from "@/constants";
+import { Event } from "../event/event";
 
 /**
  * 派閥（味方または敵）

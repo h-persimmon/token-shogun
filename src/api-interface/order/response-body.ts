@@ -1,4 +1,4 @@
-export interface AiResponseBody {
+export interface OrderResponseBody {
   metrics: { latencyMs: number },
   output: {
     message: {

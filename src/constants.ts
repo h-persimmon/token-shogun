@@ -30,3 +30,9 @@ export const UNIT = {
     }
   },
 } as const;
+
+export const ENV = {
+  BEDROCK_API_URL: {
+    DEFAULT: "https://bedrock-runtime.us-east-1.amazonaws.com/model/us.anthropic.claude-3-5-haiku-20241022-v1:0/",
+  }
+} as const;

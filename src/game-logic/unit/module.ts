@@ -1,6 +1,5 @@
 import { Position } from "../position/position";
 import { AllyUnit, EnemyUnit } from "./class";
-import { allyUnitTypeList, enemyUnitTypeList } from "./unit-type/list";
 import { UnitTypeModule } from "./unit-type/module";
 
 /**

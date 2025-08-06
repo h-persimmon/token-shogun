@@ -1,9 +1,11 @@
-import Image from "next/image";
+// import Image from "next/image";
+
+import Link from "next/link";
 
 export default function Home() {
   return (
     <div>
-      <a href="/game/1">ゲームスタートボタン（仮実装）</a>
+      <Link href="/game/1">ゲームスタートボタン（仮実装）</Link>
     </div>
   )
   // return (

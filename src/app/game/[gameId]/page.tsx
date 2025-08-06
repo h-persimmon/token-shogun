@@ -1,7 +1,7 @@
 "use client";
 
 import { GameEngine } from "@/game-logic/game-engine";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function Page() {
   const stageId = 1; // TODO: パスパラメータから取得するように変更

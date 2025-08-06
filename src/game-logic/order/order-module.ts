@@ -1,7 +1,7 @@
 import { OrderResponseBody } from "@/api-interface/order/response-body";
 import { OrderRequestBody } from "@/api-interface/order/request-body";
 import { headerPrompt, xmlSchema } from "./prompt";
-import { UnitModule } from "../unit/unit-module";
+import { UnitModule } from "../unit/module";
 
 /**
  * 命令に関するモジュール

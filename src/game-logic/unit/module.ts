@@ -1,6 +1,7 @@
 import { Position } from "../position/position";
-import { AllyUnit, EnemyUnit } from "./unit";
-import { allyUnitTypeList, enemyUnitTypeList } from "./unit-type";
+import { AllyUnit, EnemyUnit } from "./class";
+import { allyUnitTypeList, enemyUnitTypeList } from "./unit-type/list";
+import { UnitTypeModule } from "./unit-type/module";
 
 /**
  * ユニットに関するモジュール
@@ -19,7 +20,12 @@ export class UnitModule {
   /**
    * コンストラクタ
    */
-  public constructor() {
+  public constructor(
+    /**
+     * ユニットタイプに関するモジュール
+     */
+    private readonly unitTypeModule: UnitTypeModule,
+  ) {
     this.allyUnitList = [];
     this.enemyUnitList = [];
   }
@@ -34,11 +40,11 @@ export class UnitModule {
     unitTypeId: string,
     position: Position,
   ): void {
-    const unitType = allyUnitTypeList.find((allyUnitType) => allyUnitType.id === unitTypeId)!;
+    const unitType = this.unitTypeModule.findAllyByIdOrNull(unitTypeId);
     if (!unitType) {
-      throw new Error(`ユニットタイプ ${unitTypeId} は存在しません`)
+      throw new Error(`味方ユニットタイプ ${unitTypeId} は存在しません`)
     }
-    const unitId = `ally-${1}-${unitType.id}` // TODO
+    const unitId = `${unitType.id}-${++unitType.unitCount}`
     this.allyUnitList.push(new AllyUnit(unitId, unitType, position))
   }
 
@@ -52,11 +58,11 @@ export class UnitModule {
     unitTypeId: string,
     position: Position,
   ): void {
-    const unitType = enemyUnitTypeList.find((enemyUnitType) => enemyUnitType.id === unitTypeId);
+    const unitType = this.unitTypeModule.findEnemyByIdOrNull(unitTypeId);
     if (!unitType) {
-      throw new Error(`ユニットタイプ ${unitTypeId} は存在しません`)
+      throw new Error(`敵ユニットタイプ ${unitTypeId} は存在しません`)
     }
-    const unitId = `enemy-${1}-${unitType.id}` // TODO
+    const unitId = `${unitType.id}-${++unitType.unitCount}`
     this.enemyUnitList.push(new EnemyUnit(unitId, unitType, position));
   }
 }

@@ -1,54 +1,16 @@
+import { FACTION } from "@/constants";
 import { Event, eventList } from "../event/event";
 import { Position } from "../position/position";
-import { UnitStrategy } from "./unit-strategy";
-import { UnitType } from "./unit-type";
-
-/**
- * ユニットを表すインターフェース
- */
-export interface IUnit {
-  /**
-   * ID
-   */
-  readonly id: string;
-
-  /**
-   * ユニットタイプ
-   */
-  readonly unitType: UnitType;
-
-  /**
-   * 座標
-   */
-  position: Position
-
-  /**
-   * 現在の体力
-   */
-  currentHp: number;
-
-  /**
-   * 現在の移動速度
-   */
-  currentSpeed: number;
-
-  /**
-   * 現在実行中のイベント
-   */
-  currentEvent: Event;
-  
-  /**
-   * 行動戦略
-   */
-  strategy: UnitStrategy;
-}
+import { UnitStrategy } from "./unit-strategy/interface";
+import { IUnitType } from "./unit-type/interface";
+import { IUnit } from "./interface";
 
 /**
  * ユニットを表すクラス
  */
 export class Unit implements IUnit {
   readonly id: string;
-  readonly unitType: UnitType;
+  readonly unitType: IUnitType;
   position: Position;
   currentHp: number;
   currentSpeed: number;
@@ -57,7 +19,7 @@ export class Unit implements IUnit {
 
   public constructor (
     id: string,
-    unitType: UnitType,
+    unitType: IUnitType,
     position: Position,
   ) {
     this.id = id;
@@ -78,10 +40,10 @@ export class EnemyUnit implements IUnit {
 
   public constructor(
     id: string,
-    unitType: UnitType,
+    unitType: IUnitType,
     position: Position,
   ) {
-    if (unitType.faction !== "enemy") {
+    if (unitType.faction !== FACTION.ENEMY) {
       throw new Error("敵ユニットではありません")
     }
     this.unit = new Unit(
@@ -94,7 +56,7 @@ export class EnemyUnit implements IUnit {
     return this.unit.id;
   };
 
-  get unitType(): UnitType {
+  get unitType(): IUnitType {
     return this.unit.unitType;
   };
 
@@ -127,10 +89,10 @@ export class AllyUnit implements IUnit {
 
   public constructor(
     id: string,
-    unitType: UnitType,
+    unitType: IUnitType,
     position: Position,
   ) {
-    if (unitType.faction !== "ally") {
+    if (unitType.faction !== FACTION.ALLY) {
       throw new Error("味方ユニットではありません")
     }
     this.unit = new Unit(
@@ -144,7 +106,7 @@ export class AllyUnit implements IUnit {
     return this.unit.id;
   };
 
-  get unitType(): UnitType {
+  get unitType(): IUnitType {
     return this.unit.unitType;
   };
 

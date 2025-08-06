@@ -1,11 +1,18 @@
 import { OrderModule } from "./order/order-module";
 import { StageConfig, stageConfigList } from "./stage/stage";
-import { UnitModule } from "./unit/unit-module";
+import { UnitModule } from "./unit/module";
+import { UnitTypeModule } from "./unit/unit-type/module";
 
 /**
  * ゲームを管理するクラス
  */
 export class GameEngine {
+  /**
+   * ユニットタイプに関するモジュール  
+   * ユニットタイプの管理などを委譲
+   */
+  private readonly unitTypeModule: UnitTypeModule;
+
   /**
    * ユニットに関するモジュール  
    * ユニットの作成・管理などを委譲
@@ -36,7 +43,8 @@ export class GameEngine {
     stageId: number,
   ) {
     // 各モジュールを生成
-    this.unitModule = new UnitModule();
+    this.unitTypeModule = new UnitTypeModule()
+    this.unitModule = new UnitModule(this.unitTypeModule);
     this.orderModule = new OrderModule(this.unitModule);
 
     // ゲームの初期設定

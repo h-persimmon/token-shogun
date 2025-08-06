@@ -1,71 +1,34 @@
-import { Event, eventList } from "../event/event";
+import { FACTION } from "@/constants";
 import { Position } from "../position/position";
-import { UnitStrategy } from "./unit-strategy";
-import { UnitType } from "./unit-type";
+import { UnitStrategy } from "./unit-strategy/interface";
+import { IUnitType } from "./unit-type/interface";
+import { IUnit } from "./interface";
+import { IEvent } from "../event/interface";
 
 /**
- * ユニットを表すインターフェース
- */
-export interface IUnit {
-  /**
-   * ID
-   */
-  readonly id: string;
-
-  /**
-   * ユニットタイプ
-   */
-  readonly unitType: UnitType;
-
-  /**
-   * 座標
-   */
-  position: Position
-
-  /**
-   * 現在の体力
-   */
-  currentHp: number;
-
-  /**
-   * 現在の移動速度
-   */
-  currentSpeed: number;
-
-  /**
-   * 現在実行中のイベント
-   */
-  currentEvent: Event;
-  
-  /**
-   * 行動戦略
-   */
-  strategy: UnitStrategy;
-}
-
-/**
- * ユニットを表すクラス
+ * ユニット
  */
 export class Unit implements IUnit {
   readonly id: string;
-  readonly unitType: UnitType;
+  readonly unitType: IUnitType;
   position: Position;
   currentHp: number;
   currentSpeed: number;
-  currentEvent: Event;
+  currentEvent: IEvent;
   strategy: UnitStrategy;
 
   public constructor (
     id: string,
-    unitType: UnitType,
+    unitType: IUnitType,
     position: Position,
+    defaultEvent: IEvent,
   ) {
     this.id = id;
     this.unitType = unitType;
     this.position = position;
     this.currentHp = this.unitType.maxHp;
     this.currentSpeed = this.unitType.defaultSpeed;
-    this.currentEvent = eventList.find((event) => event.id === "doNothing")!; // TODO
+    this.currentEvent = defaultEvent;
     this.strategy = {} // TODO
   }
 }
@@ -78,23 +41,25 @@ export class EnemyUnit implements IUnit {
 
   public constructor(
     id: string,
-    unitType: UnitType,
+    unitType: IUnitType,
     position: Position,
+    defaultEvent: IEvent,
   ) {
-    if (unitType.faction !== "enemy") {
+    if (unitType.faction !== FACTION.ENEMY) {
       throw new Error("敵ユニットではありません")
     }
     this.unit = new Unit(
       id,
       unitType,
       position,
+      defaultEvent,
     );
   }
   get id(): string {
     return this.unit.id;
   };
 
-  get unitType(): UnitType {
+  get unitType(): IUnitType {
     return this.unit.unitType;
   };
 
@@ -110,7 +75,7 @@ export class EnemyUnit implements IUnit {
     return this.unit.currentSpeed;
   };
 
-  get currentEvent(): Event {
+  get currentEvent(): IEvent {
     return this.unit.currentEvent;
   };
 
@@ -127,16 +92,18 @@ export class AllyUnit implements IUnit {
 
   public constructor(
     id: string,
-    unitType: UnitType,
+    unitType: IUnitType,
     position: Position,
+    defaultEvent: IEvent,
   ) {
-    if (unitType.faction !== "ally") {
+    if (unitType.faction !== FACTION.ALLY) {
       throw new Error("味方ユニットではありません")
     }
     this.unit = new Unit(
       id,
       unitType,
       position,
+      defaultEvent
     );
   }
 
@@ -144,7 +111,7 @@ export class AllyUnit implements IUnit {
     return this.unit.id;
   };
 
-  get unitType(): UnitType {
+  get unitType(): IUnitType {
     return this.unit.unitType;
   };
 
@@ -160,7 +127,7 @@ export class AllyUnit implements IUnit {
     return this.unit.currentSpeed;
   };
 
-  get currentEvent(): Event {
+  get currentEvent(): IEvent {
     return this.unit.currentEvent;
   };
 

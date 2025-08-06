@@ -1,6 +1,6 @@
 import { FACTION } from "@/constants";
 import { IUnitType } from "./interface";
-import { Event } from "../../event/event";
+import { IEvent } from "../../event/interface";
 import { Faction } from "./faction";
 
 /**
@@ -13,7 +13,7 @@ export class UnitType implements IUnitType {
   readonly name: string;
   readonly maxHp: number;
   readonly defaultSpeed: number;
-  readonly availableEventList: Event[];
+  readonly availableEventList: IEvent[];
   readonly faction: Faction;
 
   constructor(
@@ -21,7 +21,7 @@ export class UnitType implements IUnitType {
     name: string,
     maxHp: number,
     defaultSpeed: number,
-    availableEventList: Event[],
+    availableEventList: IEvent[],
     faction: Faction
   ) {
     this.id = id;
@@ -44,7 +44,7 @@ export class AllyUnitType implements IUnitType {
     name: string,
     maxHp: number,
     defaultSpeed: number,
-    availableEventList: Event[]
+    availableEventList: IEvent[]
   ) {
     this.unitType = new UnitType(
       id,
@@ -72,7 +72,7 @@ export class AllyUnitType implements IUnitType {
     return this.unitType.defaultSpeed;
   }
 
-  get availableEventList(): Event[] {
+  get availableEventList(): IEvent[] {
     return this.unitType.availableEventList;
   }
 
@@ -100,7 +100,7 @@ export class EnemyUnitType implements IUnitType {
     name: string,
     maxHp: number,
     defaultSpeed: number,
-    availableEventList: Event[]
+    availableEventList: IEvent[]
   ) {
     this.unitType = new UnitType(
       id,
@@ -128,7 +128,7 @@ export class EnemyUnitType implements IUnitType {
     return this.unitType.defaultSpeed;
   }
 
-  get availableEventList(): Event[] {
+  get availableEventList(): IEvent[] {
     return this.unitType.availableEventList;
   }
 

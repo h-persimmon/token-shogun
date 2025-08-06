@@ -1,4 +1,4 @@
-import { Event } from "../event/event";
+import { IEvent } from "../event/interface";
 import { Position } from "../position/position";
 import { UnitStrategy } from "./unit-strategy/interface";
 import { IUnitType } from "./unit-type/interface";
@@ -35,7 +35,7 @@ export interface IUnit {
   /**
    * 現在実行中のイベント
    */
-  currentEvent: Event;
+  currentEvent: IEvent;
   
   /**
    * 行動戦略

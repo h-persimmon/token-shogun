@@ -1,4 +1,4 @@
-import { Event } from "../../event/event";
+import { Event } from "../../event/class";
 import { Faction } from "./faction";
 
 /**

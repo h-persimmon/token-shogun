@@ -1,4 +1,5 @@
-import { OrderModule } from "./order/order-module";
+import { EventModule } from "./event/module";
+import { OrderModule } from "./order/module";
 import { Stage } from "./stage/interface";
 import { StageModule } from "./stage/module";
 import { UnitModule } from "./unit/module";
@@ -8,6 +9,12 @@ import { UnitTypeModule } from "./unit/unit-type/module";
  * ゲームを管理するクラス
  */
 export class GameEngine {
+  /**
+   * イベントに関するモジュール
+   * イベントの管理などを委譲
+   */
+  private readonly eventModule: EventModule;
+
   /**
    * ユニットタイプに関するモジュール  
    * ユニットタイプの管理などを委譲
@@ -50,8 +57,9 @@ export class GameEngine {
     stageId: number,
   ) {
     // 各モジュールを生成
+    this.eventModule = new EventModule()
     this.unitTypeModule = new UnitTypeModule()
-    this.unitModule = new UnitModule(this.unitTypeModule);
+    this.unitModule = new UnitModule(this.eventModule, this.unitTypeModule);
     this.stageModule = new StageModule();
     this.orderModule = new OrderModule(this.unitModule);
 

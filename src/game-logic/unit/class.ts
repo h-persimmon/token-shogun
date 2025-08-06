@@ -1,12 +1,12 @@
 import { FACTION } from "@/constants";
-import { Event, eventList } from "../event/event";
 import { Position } from "../position/position";
 import { UnitStrategy } from "./unit-strategy/interface";
 import { IUnitType } from "./unit-type/interface";
 import { IUnit } from "./interface";
+import { IEvent } from "../event/interface";
 
 /**
- * ユニットを表すクラス
+ * ユニット
  */
 export class Unit implements IUnit {
   readonly id: string;
@@ -14,20 +14,21 @@ export class Unit implements IUnit {
   position: Position;
   currentHp: number;
   currentSpeed: number;
-  currentEvent: Event;
+  currentEvent: IEvent;
   strategy: UnitStrategy;
 
   public constructor (
     id: string,
     unitType: IUnitType,
     position: Position,
+    defaultEvent: IEvent,
   ) {
     this.id = id;
     this.unitType = unitType;
     this.position = position;
     this.currentHp = this.unitType.maxHp;
     this.currentSpeed = this.unitType.defaultSpeed;
-    this.currentEvent = eventList.find((event) => event.id === "doNothing")!; // TODO
+    this.currentEvent = defaultEvent;
     this.strategy = {} // TODO
   }
 }
@@ -42,6 +43,7 @@ export class EnemyUnit implements IUnit {
     id: string,
     unitType: IUnitType,
     position: Position,
+    defaultEvent: IEvent,
   ) {
     if (unitType.faction !== FACTION.ENEMY) {
       throw new Error("敵ユニットではありません")
@@ -50,6 +52,7 @@ export class EnemyUnit implements IUnit {
       id,
       unitType,
       position,
+      defaultEvent,
     );
   }
   get id(): string {
@@ -72,7 +75,7 @@ export class EnemyUnit implements IUnit {
     return this.unit.currentSpeed;
   };
 
-  get currentEvent(): Event {
+  get currentEvent(): IEvent {
     return this.unit.currentEvent;
   };
 
@@ -91,6 +94,7 @@ export class AllyUnit implements IUnit {
     id: string,
     unitType: IUnitType,
     position: Position,
+    defaultEvent: IEvent,
   ) {
     if (unitType.faction !== FACTION.ALLY) {
       throw new Error("味方ユニットではありません")
@@ -99,6 +103,7 @@ export class AllyUnit implements IUnit {
       id,
       unitType,
       position,
+      defaultEvent
     );
   }
 
@@ -122,7 +127,7 @@ export class AllyUnit implements IUnit {
     return this.unit.currentSpeed;
   };
 
-  get currentEvent(): Event {
+  get currentEvent(): IEvent {
     return this.unit.currentEvent;
   };
 

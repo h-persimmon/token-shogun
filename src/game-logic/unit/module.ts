@@ -1,3 +1,4 @@
+import { EventModule } from "../event/module";
 import { Position } from "../position/position";
 import { AllyUnit, EnemyUnit } from "./class";
 import { UnitTypeModule } from "./unit-type/module";
@@ -21,9 +22,15 @@ export class UnitModule {
    */
   public constructor(
     /**
+     * イベントに関するモジュール
+     */
+    private readonly eventModule: EventModule,
+
+    /**
      * ユニットタイプに関するモジュール
      */
     private readonly unitTypeModule: UnitTypeModule,
+
   ) {
     this.allyUnitList = [];
     this.enemyUnitList = [];
@@ -44,7 +51,12 @@ export class UnitModule {
       throw new Error(`味方ユニットタイプ ${unitTypeId} は存在しません`)
     }
     const unitId = `${unitType.id}-${++unitType.unitCount}`
-    this.allyUnitList.push(new AllyUnit(unitId, unitType, position))
+    this.allyUnitList.push(new AllyUnit(
+      unitId,
+      unitType,
+      position,
+      this.eventModule.getDefaultModule()
+    ))
   }
 
   /**
@@ -62,6 +74,11 @@ export class UnitModule {
       throw new Error(`敵ユニットタイプ ${unitTypeId} は存在しません`)
     }
     const unitId = `${unitType.id}-${++unitType.unitCount}`
-    this.enemyUnitList.push(new EnemyUnit(unitId, unitType, position));
+    this.enemyUnitList.push(new EnemyUnit(
+      unitId,
+      unitType,
+      position,
+      this.eventModule.getDefaultModule()
+    ));
   }
 }

@@ -1,13 +1,12 @@
 import { OrderResponseBody } from "@/api-interface/order/response-body";
-import { GameEngine } from "../game-engine";
 import { OrderRequestBody } from "@/api-interface/order/request-body";
 import { headerPrompt, xmlSchema } from "./prompt";
-import { UnitService } from "../unit/unit-service";
+import { UnitModule } from "../unit/unit-module";
 
 /**
- * 命令に関するサービス
+ * 命令に関するモジュール
  */
-export class OrderService {
+export class OrderModule {
   /**
    * コンストラクタ
    */
@@ -15,7 +14,7 @@ export class OrderService {
     /**
      * ユニットに関するモジュール
      */
-    private readonly unitService: UnitService,
+    private readonly unitModule: UnitModule,
   ) {};
 
   /**
@@ -44,7 +43,7 @@ export class OrderService {
     text += "```csv\n";
     text += "unitId(string), unitTypeId(string), positionX(number), positionY(number), currentHp(number), currentSpeed(number), currentEventId(string)\n";
 
-    for (const unit of this.unitService.allyUnitList) {
+    for (const unit of this.unitModule.allyUnitList) {
       text += `"${unit.id}", "${unit.unitType.id}", ${unit.position.x}, ${unit.position.y}, ${unit.currentHp}, ${unit.currentSpeed}, "${unit.currentEvent.id}"\n`;
     }
     text += "```\n";
@@ -55,7 +54,7 @@ export class OrderService {
 
     // 味方ユニットタイプの重複を除去
     const allyUnitTypes = new Set<string>();
-    for (const unit of this.unitService.allyUnitList) {
+    for (const unit of this.unitModule.allyUnitList) {
       if (!allyUnitTypes.has(unit.unitType.id)) {
         allyUnitTypes.add(unit.unitType.id);
         text += `"${unit.unitType.id}", "${unit.unitType.name}", ${unit.unitType.maxHp}, ${unit.unitType.defaultSpeed}\n`;
@@ -69,7 +68,7 @@ export class OrderService {
     text += "```csv\n";
     text += "unitId(string), unitTypeId(string), positionX(number), positionY(number), currentHp(number), currentSpeed(number), currentEventId(string)\n";
 
-    for (const unit of this.unitService.enemyUnitList) {
+    for (const unit of this.unitModule.enemyUnitList) {
       text += `"${unit.id}", "${unit.unitType.id}", ${unit.position.x}, ${unit.position.y}, ${unit.currentHp}, ${unit.currentSpeed}, "${unit.currentEvent.id}"\n`;
     }
     text += "```\n";
@@ -80,7 +79,7 @@ export class OrderService {
 
     // 敵ユニットタイプの重複を除去
     const enemyUnitTypes = new Set<string>();
-    for (const unit of this.unitService.enemyUnitList) {
+    for (const unit of this.unitModule.enemyUnitList) {
       if (!enemyUnitTypes.has(unit.unitType.id)) {
         enemyUnitTypes.add(unit.unitType.id);
         text += `"${unit.unitType.id}", "${unit.unitType.name}", ${unit.unitType.maxHp}, ${unit.unitType.defaultSpeed}\n`;
@@ -95,7 +94,7 @@ export class OrderService {
     const eventsByUnitType: { [key: string]: Array<{ id: string; name: string }> } = {};
 
     // 全ユニットタイプのイベントを収集
-    const allUnits = [...this.unitService.allyUnitList, ...this.unitService.enemyUnitList];
+    const allUnits = [...this.unitModule.allyUnitList, ...this.unitModule.enemyUnitList];
     for (const unit of allUnits) {
       if (!eventsByUnitType[unit.unitType.id]) {
         eventsByUnitType[unit.unitType.id] = [];
@@ -198,7 +197,7 @@ export class OrderService {
       };
 
       try {
-        this.unitService.createAllyUnit(unitTypeId, position);
+        this.unitModule.createAllyUnit(unitTypeId, position);
         console.log(`味方ユニット ${unitTypeId} を座標 (${position.x}, ${position.y}) に作成しました`);
       } catch (error) {
         console.error(`ユニット作成エラー (${unitTypeId}):`, error);

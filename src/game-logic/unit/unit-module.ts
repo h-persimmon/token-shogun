@@ -3,9 +3,9 @@ import { AllyUnit, EnemyUnit } from "./unit";
 import { allyUnitTypeList, enemyUnitTypeList } from "./unit-type";
 
 /**
- * ユニットに関するサービス
+ * ユニットに関するモジュール
  */
-export class UnitService {
+export class UnitModule {
   /**
    * 味方ユニット一覧
    */

@@ -1,15 +1,32 @@
-import { OrderService } from "./order/order-service";
+import { OrderModule } from "./order/order-module";
 import { StageConfig, stageConfigList } from "./stage/stage";
-import { UnitService } from "./unit/unit-service";
+import { UnitModule } from "./unit/unit-module";
 
 /**
  * ゲームを管理するクラス
  */
 export class GameEngine {
-  private readonly unitService: UnitService;
-  private readonly orderService: OrderService;
-  readonly id: string;
-  readonly stageConfig: StageConfig;
+  /**
+   * ユニットに関するモジュール  
+   * ユニットの作成・管理などを委譲
+   */
+  private readonly unitModule: UnitModule;
+
+  /**
+   * 命令に関するモジュール  
+   * AIへの命令やそれに伴うユニットの状態変化などを委譲
+   */
+  private readonly orderModule: OrderModule;
+
+  /**
+   * ステージ情報
+   */
+  private readonly stageConfig: StageConfig;
+
+  /**
+   * ゲームのID
+   */
+  public readonly id: string;
 
   /**
    * コンストラクタ
@@ -18,10 +35,13 @@ export class GameEngine {
   public constructor(
     stageId: number,
   ) {
-    this.unitService = new UnitService();
-    this.orderService = new OrderService(this.unitService);
-    this.id = "game-" + Date.now().toString();
+    // 各モジュールを生成
+    this.unitModule = new UnitModule();
+    this.orderModule = new OrderModule(this.unitModule);
+
+    // ゲームの初期設定
     this.stageConfig = stageConfigList.find((stageConfig) => stageConfig.id === stageId)!
+    this.id = "game-" + Date.now().toString();
     this.createEnemies();
   }
 
@@ -30,7 +50,7 @@ export class GameEngine {
    */
   private createEnemies(): void {
     for (const enemyUnitConfig of this.stageConfig.enemyUnitList) {
-      this.unitService.createEnemyUnit(
+      this.unitModule.createEnemyUnit(
         enemyUnitConfig.unitTypeId,
         enemyUnitConfig.position
       );
@@ -51,7 +71,7 @@ export class GameEngine {
         fieldSize: this.stageConfig.fieldSize,
         maxTokens: this.stageConfig.maxTokens
       },
-      enemyUnits: this.unitService.enemyUnitList.map(unit => ({
+      enemyUnits: this.unitModule.enemyUnitList.map(unit => ({
         id: unit.id,
         unitType: {
           id: unit.unitType.id,
@@ -65,7 +85,7 @@ export class GameEngine {
         currentSpeed: unit.currentSpeed,
         currentEvent: unit.currentEvent
       })),
-      allyUnits: this.unitService.allyUnitList.map(unit => ({
+      allyUnits: this.unitModule.allyUnitList.map(unit => ({
         id: unit.id,
         unitType: {
           id: unit.unitType.id,
@@ -88,6 +108,6 @@ export class GameEngine {
    * @returns 処理結果
    */
   public async order(userPrompt: string): Promise<void> {
-    await this.orderService.order(userPrompt);
+    await this.orderModule.order(userPrompt);
   }
 }

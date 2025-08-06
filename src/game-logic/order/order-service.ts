@@ -1,5 +1,5 @@
 import { OrderResponseBody } from "@/api-interface/order/response-body";
-import { GameEngine } from "../engine";
+import { GameEngine } from "../game-engine";
 import { OrderRequestBody } from "@/api-interface/order/request-body";
 import { headerPrompt, xmlSchema } from "./prompt";
 

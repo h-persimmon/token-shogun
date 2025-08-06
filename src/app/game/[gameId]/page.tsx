@@ -1,6 +1,6 @@
 "use client";
 
-import { GameEngine } from "@/game-logic/engine";
+import { GameEngine } from "@/game-logic/game-engine";
 import { useState, useEffect } from "react";
 
 export default function Page() {

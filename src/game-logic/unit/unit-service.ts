@@ -7,21 +7,21 @@ import { allyUnitTypeList, enemyUnitTypeList } from "./unit-type";
  */
 export class UnitService {
   /**
-   * 味方ユニットの数
+   * 味方ユニット一覧
    */
-  public allyUnitCount: number;
+  public readonly allyUnitList: AllyUnit[];
 
   /**
-   * 敵ユニットの数
+   * 敵ユニット一覧
    */
-  public enemyUnitCount: number;
+  public readonly enemyUnitList: EnemyUnit[];
 
   /**
    * コンストラクタ
    */
   public constructor() {
-    this.allyUnitCount = 0;
-    this.enemyUnitCount = 0;
+    this.allyUnitList = [];
+    this.enemyUnitList = [];
   }
 
   /**
@@ -33,13 +33,13 @@ export class UnitService {
   public createAllyUnit(
     unitTypeId: string,
     position: Position,
-  ) {
+  ): void {
     const unitType = allyUnitTypeList.find((allyUnitType) => allyUnitType.id === unitTypeId)!;
     if (!unitType) {
       throw new Error(`ユニットタイプ ${unitTypeId} は存在しません`)
     }
-    const unitId = `ally-${++this.allyUnitCount}-${unitType.id}`
-    return new AllyUnit(unitId, unitType, position);
+    const unitId = `ally-${1}-${unitType.id}` // TODO
+    this.allyUnitList.push(new AllyUnit(unitId, unitType, position))
   }
 
   /**
@@ -51,12 +51,12 @@ export class UnitService {
   public createEnemyUnit(
     unitTypeId: string,
     position: Position,
-  ) {
+  ): void {
     const unitType = enemyUnitTypeList.find((enemyUnitType) => enemyUnitType.id === unitTypeId);
     if (!unitType) {
       throw new Error(`ユニットタイプ ${unitTypeId} は存在しません`)
     }
-    const unitId = `enemy-${++this.enemyUnitCount}-${unitType.id}`
-    return new EnemyUnit(unitId, unitType, position);
+    const unitId = `enemy-${1}-${unitType.id}` // TODO
+    this.enemyUnitList.push(new EnemyUnit(unitId, unitType, position));
   }
 }

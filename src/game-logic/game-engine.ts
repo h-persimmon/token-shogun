@@ -1,7 +1,5 @@
 import { OrderService } from "./order/order-service";
-import { Position } from "./position/position";
 import { StageConfig, stageConfigList } from "./stage/stage";
-import { AllyUnit, EnemyUnit } from "./unit/unit";
 import { UnitService } from "./unit/unit-service";
 
 /**
@@ -12,8 +10,6 @@ export class GameEngine {
   private readonly orderService: OrderService;
   readonly id: string;
   readonly stageConfig: StageConfig;
-  readonly enemyUnitList: EnemyUnit[];
-  readonly allyUnitList: AllyUnit[];
 
   /**
    * コンストラクタ
@@ -23,37 +19,22 @@ export class GameEngine {
     stageId: number,
   ) {
     this.unitService = new UnitService();
-    this.orderService = new OrderService(this);
+    this.orderService = new OrderService(this.unitService);
     this.id = "game-" + Date.now().toString();
     this.stageConfig = stageConfigList.find((stageConfig) => stageConfig.id === stageId)!
-    this.enemyUnitList = [];
-    this.allyUnitList = [];
+    this.createEnemies();
   }
 
   /**
-   * ゲームを初期化する関数
+   * 初期の敵ユニットを作成する関数
    */
-  public init(): void {
+  private createEnemies(): void {
     for (const enemyUnitConfig of this.stageConfig.enemyUnitList) {
-      const enemyUnit = this.unitService.createEnemyUnit(
+      this.unitService.createEnemyUnit(
         enemyUnitConfig.unitTypeId,
         enemyUnitConfig.position
       );
-      this.enemyUnitList.push(enemyUnit);
     }
-  }
-
-  /**
-   * 味方ユニットを作成し配置する関数
-   * @param unitTypeId ユニットタイプID
-   * @param position 座標
-   */
-  public createAllyUnit(
-    unitTypeId: string,
-    position: Position,
-  ): void {
-    const allyUnit = this.unitService.createAllyUnit(unitTypeId, position);
-    this.allyUnitList.push(allyUnit);
   }
 
   /**
@@ -70,7 +51,7 @@ export class GameEngine {
         fieldSize: this.stageConfig.fieldSize,
         maxTokens: this.stageConfig.maxTokens
       },
-      enemyUnits: this.enemyUnitList.map(unit => ({
+      enemyUnits: this.unitService.enemyUnitList.map(unit => ({
         id: unit.id,
         unitType: {
           id: unit.unitType.id,
@@ -84,7 +65,7 @@ export class GameEngine {
         currentSpeed: unit.currentSpeed,
         currentEvent: unit.currentEvent
       })),
-      allyUnits: this.allyUnitList.map(unit => ({
+      allyUnits: this.unitService.allyUnitList.map(unit => ({
         id: unit.id,
         unitType: {
           id: unit.unitType.id,

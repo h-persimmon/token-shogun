@@ -5,11 +5,7 @@ import { useState, useEffect } from "react";
 
 export default function Page() {
   const stageId = 1; // TODO: パスパラメータから取得するように変更
-  const [gameEngine] = useState(() => {
-    const engine = new GameEngine(stageId);
-    engine.init();
-    return engine;
-  });
+  const [gameEngine] = useState(new GameEngine(stageId));
   const [gameStatus, setGameStatus] = useState(gameEngine.getGameStatus());
   const [prompt, setPrompt] = useState("");
 

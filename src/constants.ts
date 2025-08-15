@@ -1,3 +1,41 @@
+/**
+ * 陣営
+ */
+export const FACTION = {
+  ALLY: "ally",
+  ENEMY: "enemy",
+} as const;
+
+/**
+ * 難易度
+ */
+export const DIFFICULTY = {
+  EASY: "easy",
+  NORMAL: "normal",
+  HARD: "hard",
+} as const;
+
+/**
+ * ステージ
+ */
+export const STAGE = {
+  S01: {
+    ID: "stage1-1",
+    NAME: "ステージ1（仮名）",
+  },
+  S02: {
+    ID: "stage1-2",
+    NAME: "ステージ2（仮名）",
+  },
+  S03: {
+    ID: "stage1-3",
+    NAME: "ステージ3（仮名）",
+  },
+};
+
+/**
+ * ユニット
+ */
 export const UNIT = {
   TYPE: {
     ALLY: {
@@ -31,17 +69,9 @@ export const UNIT = {
   },
 } as const;
 
-export const FACTION = {
-  ALLY: "ally",
-  ENEMY: "enemy",
-} as const;
-
-export const DIFFICULTY = {
-  EASY: "easy",
-  NORMAL: "normal",
-  HARD: "hard",
-} as const;
-
+/**
+ * イベント
+ */
 export const EVENT = {
   DO_NOTHING: {
     ID: "doNothing",
@@ -60,6 +90,9 @@ export const EVENT = {
   },
 } as const;
 
+/**
+ * 環境変数
+ */
 export const ENV = {
   BEDROCK_API_URL: {
     DEFAULT:

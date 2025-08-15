@@ -22,7 +22,7 @@ export class StageModule {
    * @param id ステージID
    * @returns ステージ（見つからない場合はnull）
    */
-  public findByIdOrNull(id: number): Stage | null {
+  public findByIdOrNull(id: string): Stage | null {
     return this.stageList.find((stage) => stage.id === id) || null;
   }
 }

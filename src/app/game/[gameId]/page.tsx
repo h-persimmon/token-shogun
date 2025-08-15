@@ -1,16 +1,58 @@
 "use client";
 
 import { GameEngine } from "@/game-logic/game-engine";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import type { GameGetResponseBody } from "@/api-interface/games/get/response-body";
+import { Unit } from "@/game-logic/unit/class";
+
+// （Kiroが生成）
+const fetchGameData = async (gameId: string): Promise<GameGetResponseBody> => {
+  const response = await fetch(`/api/games/${gameId}`);
+
+  if (!response.ok) {
+    throw new Error("ゲームデータの取得に失敗しました");
+  }
+
+  return response.json();
+};
 
 export default function Page() {
-  const stageId = 1; // TODO: パスパラメータから取得するように変更
-  const [gameEngine] = useState(new GameEngine(stageId));
-  const [gameStatus, setGameStatus] = useState(gameEngine.getGameStatus());
+  const params = useParams();
+  const gameId = params.gameId as string;
+
+  const [gameEngine, setGameEngine] = useState<GameEngine | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [gameStatus, setGameStatus] = useState<any>(null);
   const [prompt, setPrompt] = useState("");
 
+  useEffect(() => {
+    const initializeGame = async () => {
+      try {
+        setLoading(true);
+        const gameData = await fetchGameData(gameId);
+        const stageId = gameData.stageId!;
+
+        const engine = new GameEngine(stageId);
+        setGameEngine(engine);
+        setGameStatus(engine.getGameStatus());
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "ゲームの初期化に失敗しました",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (gameId) {
+      initializeGame();
+    }
+  }, [gameId]);
+
   const handleSubmit = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || !gameEngine) return;
 
     try {
       await gameEngine.order(prompt);
@@ -22,6 +64,38 @@ export default function Page() {
       console.error("プロンプト処理エラー:", error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-600">ゲームを読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="text-6xl mb-4">❌</div>
+          <p className="text-xl text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.history.back()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!gameEngine || !gameStatus) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -60,7 +134,7 @@ export default function Page() {
               敵ユニット ({gameStatus.enemyUnits.length}体)
             </h2>
             <div className="space-y-4">
-              {gameStatus.enemyUnits.map((unit) => (
+              {gameStatus.enemyUnits.map((unit: Unit) => (
                 <div
                   key={unit.id}
                   className="bg-red-50 border border-red-200 p-4 rounded"
@@ -117,7 +191,7 @@ export default function Page() {
                   味方ユニットはまだ配置されていません
                 </p>
               ) : (
-                gameStatus.allyUnits.map((unit) => (
+                gameStatus.allyUnits.map((unit: Unit) => (
                   <div
                     key={unit.id}
                     className="bg-blue-50 border border-blue-200 p-4 rounded"

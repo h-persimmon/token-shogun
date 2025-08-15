@@ -53,7 +53,7 @@ export class GameEngine {
    * コンストラクタ
    * @param stageId ステージID
    */
-  public constructor(stageId: number) {
+  public constructor(stageId: string) {
     // 各モジュールを生成
     this.eventModule = new EventModule();
     this.unitTypeModule = new UnitTypeModule();

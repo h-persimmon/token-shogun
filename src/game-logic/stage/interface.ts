@@ -8,7 +8,7 @@ export interface Stage {
   /**
    * ID
    */
-  readonly id: number;
+  readonly id: string;
 
   /**
    * 名前
@@ -19,6 +19,11 @@ export interface Stage {
    * 難易度
    */
   readonly difficulty: Difficulty;
+
+  /**
+   * マップでの位置
+   */
+  readonly mapPosition: Position;
 
   /**
    * フィールドサイズ

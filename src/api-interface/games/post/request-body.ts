@@ -1,5 +1,5 @@
 /**
- * /gamesにPOSTする際のリクエストボディの形
+ * /gamesにPOSTする際のリクエストボディの型
  */
 export interface GamesPostRequestBody {
   /**

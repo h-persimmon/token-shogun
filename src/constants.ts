@@ -12,7 +12,7 @@ export const UNIT = {
       GUNMAN: {
         ID: "gunman",
         NAME: "銃使い",
-      }
+      },
     },
     ENEMY: {
       KAPPA: {
@@ -26,20 +26,20 @@ export const UNIT = {
       DRAGON: {
         ID: "dragon",
         NAME: "竜",
-      }
-    }
+      },
+    },
   },
 } as const;
 
 export const FACTION = {
   ALLY: "ally",
-  ENEMY: "enemy"
+  ENEMY: "enemy",
 } as const;
 
 export const DIFFICULTY = {
   EASY: "easy",
   NORMAL: "normal",
-  HARD: "hard"
+  HARD: "hard",
 } as const;
 
 export const EVENT = {
@@ -62,6 +62,7 @@ export const EVENT = {
 
 export const ENV = {
   BEDROCK_API_URL: {
-    DEFAULT: "https://bedrock-runtime.us-east-1.amazonaws.com/model/us.anthropic.claude-3-5-haiku-20241022-v1:0/",
-  }
+    DEFAULT:
+      "https://bedrock-runtime.us-east-1.amazonaws.com/model/us.anthropic.claude-3-5-haiku-20241022-v1:0/",
+  },
 } as const;

@@ -40,4 +40,3 @@ export interface IUnitType {
    */
   readonly unitCount: number;
 }
-

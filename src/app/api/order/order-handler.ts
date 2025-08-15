@@ -14,11 +14,14 @@ export class OrderHandler {
    */
   public constructor() {
     // URL
-    this.BEDROCK_API_URL = process.env.BEDROCK_API_URL || ENV.BEDROCK_API_URL.DEFAULT;
+    this.BEDROCK_API_URL =
+      process.env.BEDROCK_API_URL || ENV.BEDROCK_API_URL.DEFAULT;
     // KEY
     const keyOrNull = process.env.BEDROCK_API_KEY || null;
     if (keyOrNull === null) {
-      throw new Error("Environment BEDROCK_API_KEY is not provided. Please edit .env file.")
+      throw new Error(
+        "Environment BEDROCK_API_KEY is not provided. Please edit .env file.",
+      );
     }
     this.BEDROCK_API_KEY = keyOrNull;
   }
@@ -31,19 +34,19 @@ export class OrderHandler {
   public async sendPromptToAi(prompt: string): Promise<OrderResponseBody> {
     const url = join(this.BEDROCK_API_URL, "/converse");
     const payload = {
-      "messages": [
+      messages: [
         {
-          "role": "user",
-          "content": [{ "text": prompt }]
-        }
-      ]
+          role: "user",
+          content: [{ text: prompt }],
+        },
+      ],
     };
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.BEDROCK_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Authorization: `Bearer ${this.BEDROCK_API_KEY}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify(payload),
     });

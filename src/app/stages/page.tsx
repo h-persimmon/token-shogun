@@ -3,5 +3,5 @@ export default function Page() {
     <div>
       <a href="game/1">ゲーム</a>
     </div>
-  )
+  );
 }

@@ -32,7 +32,7 @@ export interface Stage {
     /**
      * 縦
      */
-    readonly height: number
+    readonly height: number;
   };
 
   /**

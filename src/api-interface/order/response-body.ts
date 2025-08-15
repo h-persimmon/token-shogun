@@ -1,19 +1,19 @@
 export interface OrderResponseBody {
-  metrics: { latencyMs: number },
+  metrics: { latencyMs: number };
   output: {
     message: {
-      content: { text: string }[],
-      role: string,
-    }
-  },
-  stopReason: string,
+      content: { text: string }[];
+      role: string;
+    };
+  };
+  stopReason: string;
   usage: {
-    cacheReadInputTokenCount: number,
-    cacheReadInputTokens: number,
-    cacheWriteInputTokenCount: number,
-    cacheWriteInputTokens: number,
-    inputTokens: number,
-    outputTokens: number,
-    totalTokens: number,
-  }
+    cacheReadInputTokenCount: number;
+    cacheReadInputTokens: number;
+    cacheWriteInputTokenCount: number;
+    cacheWriteInputTokens: number;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
 }

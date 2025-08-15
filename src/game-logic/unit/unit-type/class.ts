@@ -22,7 +22,7 @@ export class UnitType implements IUnitType {
     maxHp: number,
     defaultSpeed: number,
     availableEventList: IEvent[],
-    faction: Faction
+    faction: Faction,
   ) {
     this.id = id;
     this.name = name;
@@ -44,7 +44,7 @@ export class AllyUnitType implements IUnitType {
     name: string,
     maxHp: number,
     defaultSpeed: number,
-    availableEventList: IEvent[]
+    availableEventList: IEvent[],
   ) {
     this.unitType = new UnitType(
       id,
@@ -52,7 +52,7 @@ export class AllyUnitType implements IUnitType {
       maxHp,
       defaultSpeed,
       availableEventList,
-      FACTION.ALLY
+      FACTION.ALLY,
     );
   }
 
@@ -81,7 +81,7 @@ export class AllyUnitType implements IUnitType {
   }
 
   get unitCount(): number {
-    return this.unitType.unitCount
+    return this.unitType.unitCount;
   }
 
   set unitCount(unitCount: number) {
@@ -100,7 +100,7 @@ export class EnemyUnitType implements IUnitType {
     name: string,
     maxHp: number,
     defaultSpeed: number,
-    availableEventList: IEvent[]
+    availableEventList: IEvent[],
   ) {
     this.unitType = new UnitType(
       id,
@@ -108,7 +108,7 @@ export class EnemyUnitType implements IUnitType {
       maxHp,
       defaultSpeed,
       availableEventList,
-      FACTION.ENEMY
+      FACTION.ENEMY,
     );
   }
 
@@ -137,7 +137,7 @@ export class EnemyUnitType implements IUnitType {
   }
 
   get unitCount(): number {
-    return this.unitType.unitCount
+    return this.unitType.unitCount;
   }
 
   set unitCount(unitCount: number) {

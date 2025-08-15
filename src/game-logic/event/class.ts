@@ -8,11 +8,7 @@ export class Event implements IEvent {
   readonly name: string;
   readonly tags: readonly string[];
 
-  public constructor(
-    id: string,
-    name: string,
-    tags: readonly string[],
-  ) {
+  public constructor(id: string, name: string, tags: readonly string[]) {
     this.id = id;
     this.name = name;
     this.tags = tags;
@@ -32,19 +28,19 @@ export class AttackEvent implements IEvent {
     tags: readonly string[],
     damage: number,
   ) {
-    this.event = new Event(id, name, tags)
+    this.event = new Event(id, name, tags);
     this.damage = damage;
   }
 
   get id(): string {
-    return this.event.id
+    return this.event.id;
   }
 
   get name(): string {
-    return this.event.name
+    return this.event.name;
   }
 
   get tags(): readonly string[] {
-    return this.event.tags
+    return this.event.tags;
   }
 }

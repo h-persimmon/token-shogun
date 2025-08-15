@@ -17,7 +17,7 @@ export class Unit implements IUnit {
   currentEvent: IEvent;
   strategy: UnitStrategy;
 
-  public constructor (
+  public constructor(
     id: string,
     unitType: IUnitType,
     position: Position,
@@ -29,7 +29,7 @@ export class Unit implements IUnit {
     this.currentHp = this.unitType.maxHp;
     this.currentSpeed = this.unitType.defaultSpeed;
     this.currentEvent = defaultEvent;
-    this.strategy = {} // TODO
+    this.strategy = {}; // TODO
   }
 }
 
@@ -46,42 +46,37 @@ export class EnemyUnit implements IUnit {
     defaultEvent: IEvent,
   ) {
     if (unitType.faction !== FACTION.ENEMY) {
-      throw new Error("敵ユニットではありません")
+      throw new Error("敵ユニットではありません");
     }
-    this.unit = new Unit(
-      id,
-      unitType,
-      position,
-      defaultEvent,
-    );
+    this.unit = new Unit(id, unitType, position, defaultEvent);
   }
   get id(): string {
     return this.unit.id;
-  };
+  }
 
   get unitType(): IUnitType {
     return this.unit.unitType;
-  };
+  }
 
   get position(): Position {
     return this.unit.position;
-  };
+  }
 
   get currentHp(): number {
     return this.unit.currentHp;
-  };
+  }
 
   get currentSpeed(): number {
     return this.unit.currentSpeed;
-  };
+  }
 
   get currentEvent(): IEvent {
     return this.unit.currentEvent;
-  };
+  }
 
   get strategy(): UnitStrategy {
     return this.unit.strategy;
-  };
+  }
 }
 
 /**
@@ -97,41 +92,36 @@ export class AllyUnit implements IUnit {
     defaultEvent: IEvent,
   ) {
     if (unitType.faction !== FACTION.ALLY) {
-      throw new Error("味方ユニットではありません")
+      throw new Error("味方ユニットではありません");
     }
-    this.unit = new Unit(
-      id,
-      unitType,
-      position,
-      defaultEvent
-    );
+    this.unit = new Unit(id, unitType, position, defaultEvent);
   }
 
   get id(): string {
     return this.unit.id;
-  };
+  }
 
   get unitType(): IUnitType {
     return this.unit.unitType;
-  };
+  }
 
   get position(): Position {
     return this.unit.position;
-  };
+  }
 
   get currentHp(): number {
     return this.unit.currentHp;
-  };
+  }
 
   get currentSpeed(): number {
     return this.unit.currentSpeed;
-  };
+  }
 
   get currentEvent(): IEvent {
     return this.unit.currentEvent;
-  };
+  }
 
   get strategy(): UnitStrategy {
     return this.unit.strategy;
-  };
+  }
 }

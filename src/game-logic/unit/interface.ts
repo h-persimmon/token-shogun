@@ -20,7 +20,7 @@ export interface IUnit {
   /**
    * 座標
    */
-  position: Position
+  position: Position;
 
   /**
    * 現在の体力
@@ -36,7 +36,7 @@ export interface IUnit {
    * 現在実行中のイベント
    */
   currentEvent: IEvent;
-  
+
   /**
    * 行動戦略
    */

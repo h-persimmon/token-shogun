@@ -19,14 +19,14 @@ export const stageList: Stage[] = [
         position: {
           x: 100,
           y: 200,
-        }
+        },
       },
       {
         unitTypeId: UNIT.TYPE.ENEMY.GHOST.ID,
         position: {
           x: 200,
           y: 300,
-        }
+        },
       },
     ],
     allyUnitIdList: [
@@ -35,5 +35,5 @@ export const stageList: Stage[] = [
       UNIT.TYPE.ALLY.GUNMAN.ID,
     ],
     maxTokens: 1000,
-  }
-]
+  },
+];

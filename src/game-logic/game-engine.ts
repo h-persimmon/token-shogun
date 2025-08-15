@@ -16,13 +16,13 @@ export class GameEngine {
   private readonly eventModule: EventModule;
 
   /**
-   * ユニットタイプに関するモジュール  
+   * ユニットタイプに関するモジュール
    * ユニットタイプの管理などを委譲
    */
   private readonly unitTypeModule: UnitTypeModule;
 
   /**
-   * ユニットに関するモジュール  
+   * ユニットに関するモジュール
    * ユニットの作成・管理などを委譲
    */
   private readonly unitModule: UnitModule;
@@ -34,7 +34,7 @@ export class GameEngine {
   private readonly stageModule: StageModule;
 
   /**
-   * 命令に関するモジュール  
+   * 命令に関するモジュール
    * AIへの命令やそれに伴うユニットの状態変化などを委譲
    */
   private readonly orderModule: OrderModule;
@@ -53,12 +53,10 @@ export class GameEngine {
    * コンストラクタ
    * @param stageId ステージID
    */
-  public constructor(
-    stageId: number,
-  ) {
+  public constructor(stageId: number) {
     // 各モジュールを生成
-    this.eventModule = new EventModule()
-    this.unitTypeModule = new UnitTypeModule()
+    this.eventModule = new EventModule();
+    this.unitTypeModule = new UnitTypeModule();
     this.unitModule = new UnitModule(this.eventModule, this.unitTypeModule);
     this.stageModule = new StageModule();
     this.orderModule = new OrderModule(this.unitModule);
@@ -66,7 +64,7 @@ export class GameEngine {
     // ゲームの初期設定
     const stageOrNull = this.stageModule.findByIdOrNull(stageId);
     if (!stageOrNull) {
-      throw new Error(`ステージ ${stageId} は存在しません。`)
+      throw new Error(`ステージ ${stageId} は存在しません。`);
     }
     this.stage = stageOrNull;
     this.id = "game-" + Date.now().toString();
@@ -80,7 +78,7 @@ export class GameEngine {
     for (const enemyUnitConfig of this.stage.enemyUnitList) {
       this.unitModule.createEnemyUnit(
         enemyUnitConfig.unitTypeId,
-        enemyUnitConfig.position
+        enemyUnitConfig.position,
       );
     }
   }
@@ -97,36 +95,36 @@ export class GameEngine {
         name: this.stage.name,
         difficulty: this.stage.difficulty,
         fieldSize: this.stage.fieldSize,
-        maxTokens: this.stage.maxTokens
+        maxTokens: this.stage.maxTokens,
       },
-      enemyUnits: this.unitModule.enemyUnitList.map(unit => ({
+      enemyUnits: this.unitModule.enemyUnitList.map((unit) => ({
         id: unit.id,
         unitType: {
           id: unit.unitType.id,
           name: unit.unitType.name,
           faction: unit.unitType.faction,
           maxHp: unit.unitType.maxHp,
-          defaultSpeed: unit.unitType.defaultSpeed
+          defaultSpeed: unit.unitType.defaultSpeed,
         },
         position: unit.position,
         currentHp: unit.currentHp,
         currentSpeed: unit.currentSpeed,
-        currentEvent: unit.currentEvent
+        currentEvent: unit.currentEvent,
       })),
-      allyUnits: this.unitModule.allyUnitList.map(unit => ({
+      allyUnits: this.unitModule.allyUnitList.map((unit) => ({
         id: unit.id,
         unitType: {
           id: unit.unitType.id,
           name: unit.unitType.name,
           faction: unit.unitType.faction,
           maxHp: unit.unitType.maxHp,
-          defaultSpeed: unit.unitType.defaultSpeed
+          defaultSpeed: unit.unitType.defaultSpeed,
         },
         position: unit.position,
         currentHp: unit.currentHp,
         currentSpeed: unit.currentSpeed,
-        currentEvent: unit.currentEvent
-      }))
+        currentEvent: unit.currentEvent,
+      })),
     };
   }
 

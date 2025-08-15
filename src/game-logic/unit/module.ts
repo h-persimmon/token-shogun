@@ -30,7 +30,6 @@ export class UnitModule {
      * ユニットタイプに関するモジュール
      */
     private readonly unitTypeModule: UnitTypeModule,
-
   ) {
     this.allyUnitList = [];
     this.enemyUnitList = [];
@@ -42,21 +41,20 @@ export class UnitModule {
    * @param position 座標
    * @returns 味方ユニット
    */
-  public createAllyUnit(
-    unitTypeId: string,
-    position: Position,
-  ): void {
+  public createAllyUnit(unitTypeId: string, position: Position): void {
     const unitType = this.unitTypeModule.findAllyByIdOrNull(unitTypeId);
     if (!unitType) {
-      throw new Error(`味方ユニットタイプ ${unitTypeId} は存在しません`)
+      throw new Error(`味方ユニットタイプ ${unitTypeId} は存在しません`);
     }
-    const unitId = `${unitType.id}-${++unitType.unitCount}`
-    this.allyUnitList.push(new AllyUnit(
-      unitId,
-      unitType,
-      position,
-      this.eventModule.getDefaultModule()
-    ))
+    const unitId = `${unitType.id}-${++unitType.unitCount}`;
+    this.allyUnitList.push(
+      new AllyUnit(
+        unitId,
+        unitType,
+        position,
+        this.eventModule.getDefaultModule(),
+      ),
+    );
   }
 
   /**
@@ -65,20 +63,19 @@ export class UnitModule {
    * @param position 座標
    * @returns 敵ユニット
    */
-  public createEnemyUnit(
-    unitTypeId: string,
-    position: Position,
-  ): void {
+  public createEnemyUnit(unitTypeId: string, position: Position): void {
     const unitType = this.unitTypeModule.findEnemyByIdOrNull(unitTypeId);
     if (!unitType) {
-      throw new Error(`敵ユニットタイプ ${unitTypeId} は存在しません`)
+      throw new Error(`敵ユニットタイプ ${unitTypeId} は存在しません`);
     }
-    const unitId = `${unitType.id}-${++unitType.unitCount}`
-    this.enemyUnitList.push(new EnemyUnit(
-      unitId,
-      unitType,
-      position,
-      this.eventModule.getDefaultModule()
-    ));
+    const unitId = `${unitType.id}-${++unitType.unitCount}`;
+    this.enemyUnitList.push(
+      new EnemyUnit(
+        unitId,
+        unitType,
+        position,
+        this.eventModule.getDefaultModule(),
+      ),
+    );
   }
 }

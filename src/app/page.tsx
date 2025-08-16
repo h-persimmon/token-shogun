@@ -5,7 +5,7 @@ import { useState } from "react";
 
 // （Kiroが生成）
 const handleGameStart = (router: any) => {
-  router.push("/stages");
+  router.push("/player/selection");
 };
 
 export default function TopPage() {

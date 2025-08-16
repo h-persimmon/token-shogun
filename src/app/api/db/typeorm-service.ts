@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { DataSource, EntityTarget, ObjectLiteral, Repository } from "typeorm";
 import { Game } from "../games/game.entity";
 import { DataSourceNotInitializedError } from "./data-source-not-initialized-error";
+import { Player } from "../players/player.entity";
 
 /**
  * TypeORMサービス（Kiroが生成）
@@ -24,9 +25,9 @@ export class TypeOrmService {
     this.dataSource = new DataSource({
       type: "sqlite",
       database: process.env.DATABASE_PATH || "sqlite3/database.db",
-      entities: [Game],
       synchronize: process.env.NODE_ENV !== "production",
       logging: process.env.NODE_ENV === "development",
+      entities: [Game, Player],
     });
 
     await this.dataSource.initialize();

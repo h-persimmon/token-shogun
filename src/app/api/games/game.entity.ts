@@ -9,11 +9,19 @@ export class Game {
    * ID
    */
   @PrimaryGeneratedColumn()
-  id?: string;
+  id!: string;
 
   /**
    * ステージID
    */
   @Column()
-  stageId?: string;
+  stageId!: string;
+
+  /**
+   * コンストラクタ
+   * @param partial 部分型
+   */
+  constructor(partial?: Partial<Game>) {
+    Object.assign(this, partial);
+  }
 }

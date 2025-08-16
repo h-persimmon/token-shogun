@@ -17,7 +17,7 @@ const fetchGameData = async (gameId: string): Promise<GameGetResponseBody> => {
   return response.json();
 };
 
-export default function Page() {
+export default function GamePage() {
   const params = useParams();
   const gameId = params.gameId as string;
 

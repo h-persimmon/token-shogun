@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { GamesPostRequestBody } from "../../api-interface/games/post/request-body";
-import type { GamesPostResponseBody } from "../../api-interface/games/post/response-body";
+import type { GamesPostRequestBody } from "../../../api-interface/games/post/request-body";
+import type { GamesPostResponseBody } from "../../../api-interface/games/post/response-body";
 import { stageList } from "@/game-logic/stage/list";
 import { Stage } from "@/game-logic/stage/interface";
 
@@ -45,7 +45,7 @@ const handleStageSelect = async (
   }
 };
 
-export default function Page() {
+export default function StageSelectionPage() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
 

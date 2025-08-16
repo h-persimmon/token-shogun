@@ -8,7 +8,7 @@ const handleGameStart = (router: any) => {
   router.push("/stages");
 };
 
-export default function Home() {
+export default function TopPage() {
   const router = useRouter();
   const [isPressed, setIsPressed] = useState(false);
 
@@ -44,9 +44,7 @@ export default function Home() {
         </div>
 
         {/* 装飾的な桜の花びら */}
-        <div className="absolute -top-4 -left-4 text-4xl animate-pulse">
-          🌸
-        </div>
+        <div className="absolute -top-4 -left-4 text-4xl animate-pulse">🌸</div>
         <div className="absolute -top-2 -right-6 text-3xl animate-pulse delay-300">
           🌸
         </div>

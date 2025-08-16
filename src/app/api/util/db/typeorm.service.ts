@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { DataSource, EntityTarget, ObjectLiteral, Repository } from "typeorm";
 import { Game } from "../../games/game.entity";
-import { DataSourceNotInitializedError } from "./data-source-not-initialized-error";
+import { DataSourceNotInitializedError } from "../error/custom/data-source-not-initialized-error";
 import { Player } from "../../players/player.entity";
 
 /**

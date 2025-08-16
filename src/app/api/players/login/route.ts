@@ -1,8 +1,8 @@
-import { withErrorHandling } from "../../with-error-handling";
+import { withErrorHandling } from "../../util/error/with-error-handling";
 import { NextRequest, NextResponse } from "next/server";
 import { PlayerService } from "../player.service";
 import { PlayersLoginPostRequestBody } from "@/api-interface/players/login/post-request-body";
-import { SessionService } from "../../util/session.service";
+import { SessionService } from "../../util/session/session.service";
 import { PlayersLoginPostResponseBody } from "@/api-interface/players/login/post-response-body";
 
 /**
@@ -15,7 +15,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const { playerId } = requestBody;
 
   // プレイヤーが存在するかチェック（Kiroが生成）
-  const player = await playerService.findById(playerId);
+  const player = await playerService.findByIdOrNull(playerId);
   if (!player) {
     const responseBody: PlayersLoginPostResponseBody = {
       isSuccess: false,
@@ -26,7 +26,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   // セッションにプレイヤーIDを保存（Kiroが生成）
-  await SessionService.setPlayerId(playerId);
+  const sessionService = SessionService.getInstance();
+  await sessionService.setCurrentPlayerId(playerId);
 
   const responseBody: PlayersLoginPostResponseBody = {
     isSuccess: true,

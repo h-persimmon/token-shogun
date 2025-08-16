@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withErrorHandling } from "../with-error-handling";
+import { withErrorHandling } from "../util/error/with-error-handling";
 import { PlayerService } from "./player.service";
 import { PlayersGetResponseBody } from "@/api-interface/players/get-response-body";
 

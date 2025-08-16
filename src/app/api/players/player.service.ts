@@ -43,8 +43,15 @@ export class PlayerService {
   /**
    * IDでプレイヤーを取得する（Kiroが生成）
    */
-  public async findById(id: string): Promise<Player | null> {
+  public async findByIdOrNull(id: string): Promise<Player | null> {
     return this.playerRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * IDでプレイヤーを取得し、なければ例外を投げる
+   */
+  public async findByIdOrFail(id: string): Promise<Player> {
+    return this.playerRepository.findOneOrFail({ where: { id } });
   }
 
   /**

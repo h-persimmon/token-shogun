@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
+import { Player } from "../players/player.entity";
 
 /**
  * DBに保存するゲームごとの情報のエンティティ
@@ -16,6 +23,18 @@ export class Game {
    */
   @Column()
   stageId!: string;
+
+  /**
+   * クリアされたか
+   */
+  @Column()
+  isCleared!: boolean;
+
+  /**
+   * プレイしたプレイヤー（Kiroが生成）
+   */
+  @ManyToOne(() => Player, (player) => player.games)
+  player!: Player;
 
   /**
    * コンストラクタ

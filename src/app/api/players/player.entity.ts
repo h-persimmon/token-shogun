@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  PrimaryColumn,
+  OneToMany,
+  type Relation,
+} from "typeorm";
+import { Game } from "../games/game.entity";
 
 /**
  * DBに保存するプレイヤー情報のエンティティ
@@ -16,6 +23,12 @@ export class Player {
    */
   @Column()
   name!: string;
+
+  /**
+   * プレイしたゲーム一覧（Kiroが生成）
+   */
+  @OneToMany(() => Game, (game) => game.player)
+  games!: Relation<Game[]>;
 
   /**
    * コンストラクタ

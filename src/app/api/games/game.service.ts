@@ -1,6 +1,7 @@
 import { Repository } from "typeorm";
 import { Game } from "./game.entity";
 import { TypeOrmService } from "../util/db/typeorm.service";
+import { Player } from "../players/player.entity";
 
 /**
  * ゲームに関するサービス（Kiroが生成）
@@ -41,17 +42,53 @@ export class GameService {
   }
 
   /**
+   * 指定されたプレイヤーがプレイしたゲームを取得する
+   * @param playerId プレイヤーID
+   */
+  public async findByPlayerId(playerId: string): Promise<Game[]> {
+    return this.gameRepository.find({
+      where: {
+        player: new Player({ id: playerId }),
+      },
+    });
+  }
+
+  /**
+   * 指定されたプレイヤーがクリアしたゲームを取得する
+   * @param playerId プレイヤーID
+   */
+  public async findClearedGamesByPlayerId(playerId: string): Promise<Game[]> {
+    return this.gameRepository.find({
+      where: {
+        player: new Player({ id: playerId }),
+        isCleared: true,
+      },
+    });
+  }
+
+  /**
    * IDでゲームを取得する（Kiroが生成）
    */
-  public async findById(id: string): Promise<Game | null> {
+  public async findByIdOrNull(id: string): Promise<Game | null> {
     return this.gameRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * IDでゲームを取得し、なければ例外を投げる
+   */
+  public async findByIdOrFail(id: string): Promise<Game> {
+    return this.gameRepository.findOneOrFail({ where: { id } });
   }
 
   /**
    * ゲームを作成する（Kiroが生成）
    */
-  public async create(stageId: string): Promise<Game> {
-    const game = this.gameRepository.create({ stageId });
+  public async create(stageId: string, playerId: string): Promise<Game> {
+    const game = this.gameRepository.create({
+      stageId,
+      isCleared: false,
+      player: new Player({ id: playerId }),
+    });
     return this.gameRepository.save(game);
   }
 
@@ -63,7 +100,7 @@ export class GameService {
     gameData: Partial<Game>,
   ): Promise<Game | null> {
     await this.gameRepository.update(id, gameData);
-    return this.findById(id);
+    return this.findByIdOrNull(id);
   }
 
   /**

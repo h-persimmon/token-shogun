@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withErrorHandling } from "../../with-error-handling";
+import { withErrorHandling } from "../../util/error/with-error-handling";
 import { GameService } from "../game.service";
+import { GameGetResponseBody } from "@/api-interface/games/get-response-body";
 
 /**
  * GETリクエストの処理
@@ -13,6 +14,8 @@ export const GET = withErrorHandling(
     const gameService = GameService.getInstance();
     const { gameId } = await params;
 
-    return NextResponse.json(await gameService.findById(gameId));
+    const responseBody: GameGetResponseBody =
+      await gameService.findByIdOrFail(gameId);
+    return NextResponse.json(responseBody);
   },
 );

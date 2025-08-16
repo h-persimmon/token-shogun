@@ -3,7 +3,7 @@
 import { GameEngine } from "@/game-logic/game-engine";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import type { GameGetResponseBody } from "@/api-interface/games/get/response-body";
+import type { GameGetResponseBody } from "@/api-interface/games/get-response-body";
 import { Unit } from "@/game-logic/unit/class";
 
 // （Kiroが生成）

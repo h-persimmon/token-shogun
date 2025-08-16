@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { DataSource, EntityTarget, ObjectLiteral, Repository } from "typeorm";
-import { Game } from "../games/game.entity";
+import { Game } from "../../games/game.entity";
 import { DataSourceNotInitializedError } from "./data-source-not-initialized-error";
-import { Player } from "../players/player.entity";
+import { Player } from "../../players/player.entity";
 
 /**
  * TypeORMサービス（Kiroが生成）

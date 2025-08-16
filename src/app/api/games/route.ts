@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GameService } from "./game.service";
-import { GamesPostRequestBody } from "@/api-interface/games/post/request-body";
+import { GamesPostRequestBody } from "@/api-interface/games/post-request-body";
 import { withErrorHandling } from "../with-error-handling";
-import { GamesPostResponseBody } from "@/api-interface/games/post/response-body";
-import { GamesGetResponseBody } from "@/api-interface/games/get/response-body";
+import { GamesPostResponseBody } from "@/api-interface/games/post-response-body";
+import { GamesGetResponseBody } from "@/api-interface/games/get-response-body";
 
 /**
  * POSTリクエストの処理

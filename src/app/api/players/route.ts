@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withErrorHandling } from "../with-error-handling";
 import { PlayerService } from "./player.service";
-import { PlayersGetResponseBody } from "@/api-interface/players/get/response-body";
+import { PlayersGetResponseBody } from "@/api-interface/players/get-response-body";
 
 /**
  * GETリクエストの処理

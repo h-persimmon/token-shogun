@@ -1,6 +1,6 @@
 import { ENV } from "@/constants";
 import { join } from "path";
-import { OrderResponseBody } from "@/api-interface/order/response-body";
+import { OrderPostResponseBody } from "@/api-interface/order/post-response-body";
 
 /**
  * /orderへのリクエストを処理するためのクラス
@@ -31,7 +31,7 @@ export class OrderHandler {
    * @param prompt プロンプト
    * @returns レスポンスボディ
    */
-  public async sendPromptToAi(prompt: string): Promise<OrderResponseBody> {
+  public async sendPromptToAi(prompt: string): Promise<OrderPostResponseBody> {
     const url = join(this.BEDROCK_API_URL, "/converse");
     const payload = {
       messages: [

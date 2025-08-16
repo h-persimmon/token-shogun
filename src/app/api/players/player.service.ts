@@ -1,6 +1,6 @@
 import { Repository } from "typeorm";
 import { Player } from "./player.entity";
-import { TypeOrmService } from "../db/typeorm-service";
+import { TypeOrmService } from "../util/db/typeorm.service";
 
 /**
  * ゲームに関するサービス（Kiroが生成）

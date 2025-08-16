@@ -1,6 +1,9 @@
 "use client";
 
-import { PlayersGetResponseBody } from "@/api-interface/players/get/response-body";
+import { PlayersGetResponseBody } from "@/api-interface/players/get-response-body";
+import { PlayersLoginPostRequestBody } from "@/api-interface/players/login/post-request-body";
+import { PlayersLoginPostResponseBody } from "@/api-interface/players/login/post-response-body";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 /**
@@ -18,6 +21,8 @@ export default function PlayerSelectionPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const router = useRouter();
 
   /**
    * プレイヤーデータを取得する関数（Kiroが生成）
@@ -45,6 +50,43 @@ export default function PlayerSelectionPage() {
    */
   const handlePlayerSelect = (playerId: string) => {
     setSelectedPlayer(playerId);
+  };
+
+  /**
+   * ログイン処理（Kiroが生成）
+   */
+  const handleLogin = async () => {
+    if (!selectedPlayer) return;
+
+    setIsLoggingIn(true);
+    try {
+      const requestBody: PlayersLoginPostRequestBody = {
+        playerId: selectedPlayer,
+      };
+
+      const response = await fetch("/api/players/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const responseBody: PlayersLoginPostResponseBody = await response.json();
+
+      if (responseBody.isSuccess) {
+        // ログイン成功時はステージ選択画面に遷移
+        router.push("/stage/selection");
+      } else {
+        // ログイン失敗時はエラーメッセージを表示
+        alert(`ログインに失敗しました: ${responseBody.message}`);
+      }
+    } catch (error) {
+      console.error("ログインエラー:", error);
+      alert("ログイン中にエラーが発生しました");
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   if (loading) {
@@ -153,8 +195,26 @@ export default function PlayerSelectionPage() {
         {/* 選択確定ボタン */}
         {selectedPlayer && (
           <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2">
-            <button className="bg-gradient-to-r from-amber-600 to-red-600 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
-              ステージ選択へ
+            <button
+              onClick={handleLogin}
+              disabled={isLoggingIn}
+              className={`
+                px-8 py-3 rounded-full font-bold text-lg shadow-lg transition-all duration-300
+                ${
+                  isLoggingIn
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-amber-600 to-red-600 text-white hover:shadow-xl transform hover:scale-105"
+                }
+              `}
+            >
+              {isLoggingIn ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  ログイン中...
+                </div>
+              ) : (
+                "ステージ選択へ"
+              )}
             </button>
           </div>
         )}

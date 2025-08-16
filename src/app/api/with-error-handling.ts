@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { TypeOrmService } from "./db/typeorm-service";
-import { DataSourceNotInitializedError } from "./db/data-source-not-initialized-error";
+import { TypeOrmService } from "./util/db/typeorm.service";
+import { DataSourceNotInitializedError } from "./util/db/data-source-not-initialized-error";
 
 /**
  * コントローラのエラー処理をラップした関数

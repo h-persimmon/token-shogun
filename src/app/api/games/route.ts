@@ -5,20 +5,17 @@ import { withErrorHandling } from "../util/error/with-error-handling";
 import { GamesPostResponseBody } from "@/api-interface/games/post-response-body";
 import { GamesGetResponseBody } from "@/api-interface/games/get-response-body";
 import { SessionService } from "../util/session/session.service";
-import { PlayerService } from "../players/player.service";
 
 /**
  * POSTリクエストの処理
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
   const gameService = GameService.getInstance();
-  const playerService = PlayerService.getInstance();
   const sessionService = SessionService.getInstance();
   const requestBody: GamesPostRequestBody = await request.json();
 
   const { stageId } = requestBody;
-  const currentPlayerId = await sessionService.getCurrentPlayerIdOrThrow();
-  const currentPlayer = await playerService.findByIdOrFail(currentPlayerId);
+  const currentPlayer = await sessionService.getCurrentPlayerOrThrow();
   const game = await gameService.create(stageId, currentPlayer.id);
 
   const responseBody: GamesPostResponseBody = { gameId: game.id };
@@ -31,13 +28,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const gameService = GameService.getInstance();
   const playerId = request.nextUrl.searchParams.get("playerId");
-  const isCleared = request.nextUrl.searchParams.get("isCleared");
+  const isCompleted = request.nextUrl.searchParams.get("isCompleted");
 
   let responseBody: GamesGetResponseBody;
   if (playerId === null) {
     responseBody = await gameService.findAll();
-  } else if (isCleared) {
-    responseBody = await gameService.findClearedGamesByPlayerId(playerId);
+  } else if (isCompleted) {
+    responseBody = await gameService.findCompletedGamesByPlayerId(playerId);
   } else {
     responseBody = await gameService.findByPlayerId(playerId);
   }

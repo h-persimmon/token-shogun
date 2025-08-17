@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { NoPlayerSelectedError } from "../error/custom/no-player-selected-error";
+import { Player } from "../../players/player.entity";
+import { PlayerService } from "../../players/player.service";
 
 /**
  * セッション管理のユーティリティ（Kiroが生成）
@@ -21,9 +23,16 @@ export class SessionService {
   private static instance: SessionService;
 
   /**
+   * プレイヤーに関するサービス
+   */
+  private readonly playerService: PlayerService;
+
+  /**
    * コンストラクタ（Kiroが生成）
    */
-  private constructor() {}
+  private constructor() {
+    this.playerService = PlayerService.getInstance();
+  }
 
   /**
    * インスタンスを取得する（Kiroが生成）
@@ -50,23 +59,26 @@ export class SessionService {
   }
 
   /**
-   * セッションからプレイヤーIDを取得する（Kiroが生成）
+   * セッションからプレイヤーを取得する（Kiroが生成）
    */
-  public async getCurrentPlayerIdOrNull(): Promise<string | null> {
+  public async getCurrentPlayerOrNull(): Promise<Player | null> {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(this.SESSION_COOKIE_NAME);
-    return sessionCookie?.value || null;
+    if (!sessionCookie) {
+      return null;
+    }
+    return this.playerService.findByIdOrNull(sessionCookie.value);
   }
 
   /**
-   * セッションからプレイヤーIDを取得し、なければ例外を投げる
+   * セッションからプレイヤーを取得し、なければ例外を投げる
    */
-  public async getCurrentPlayerIdOrThrow(): Promise<string> {
-    const currentPlayerId = await this.getCurrentPlayerIdOrNull();
-    if (currentPlayerId === null) {
+  public async getCurrentPlayerOrThrow(): Promise<Player> {
+    const currentPlayer = await this.getCurrentPlayerOrNull();
+    if (currentPlayer === null) {
       throw new NoPlayerSelectedError();
     }
-    return currentPlayerId;
+    return currentPlayer;
   }
 
   /**

@@ -21,19 +21,40 @@ export class Game {
   /**
    * ステージID
    */
-  @Column()
+  @Column({
+    name: "stage_id",
+  })
   stageId!: string;
+
+  /**
+   * 正常に終了したか
+   */
+  @Column({
+    name: "is_finished",
+  })
+  isFinished!: boolean;
 
   /**
    * クリアされたか
    */
-  @Column()
-  isCleared!: boolean;
+  @Column({
+    name: "is_completed",
+  })
+  isCompleted!: boolean;
+
+  /**
+   * 消費したトークン数
+   */
+  @Column({
+    name: "consumed_token",
+  })
+  consumedToken!: number;
 
   /**
    * プレイしたプレイヤー（Kiroが生成）
    */
   @ManyToOne(() => Player, (player) => player.games)
+  @JoinColumn({ name: "player_id" })
   player!: Player;
 
   /**

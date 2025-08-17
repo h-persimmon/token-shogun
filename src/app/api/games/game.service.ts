@@ -38,7 +38,7 @@ export class GameService {
    * 全てのゲームを取得する（Kiroが生成）
    */
   public async findAll(): Promise<Game[]> {
-    return this.gameRepository.find();
+    return this.gameRepository.find({ relations: { player: true } });
   }
 
   /**
@@ -57,11 +57,11 @@ export class GameService {
    * 指定されたプレイヤーがクリアしたゲームを取得する
    * @param playerId プレイヤーID
    */
-  public async findClearedGamesByPlayerId(playerId: string): Promise<Game[]> {
+  public async findCompletedGamesByPlayerId(playerId: string): Promise<Game[]> {
     return this.gameRepository.find({
       where: {
         player: new Player({ id: playerId }),
-        isCleared: true,
+        isCompleted: true,
       },
     });
   }
@@ -70,14 +70,20 @@ export class GameService {
    * IDでゲームを取得する（Kiroが生成）
    */
   public async findByIdOrNull(id: string): Promise<Game | null> {
-    return this.gameRepository.findOne({ where: { id } });
+    return this.gameRepository.findOne({
+      where: { id },
+      relations: { player: true },
+    });
   }
 
   /**
    * IDでゲームを取得し、なければ例外を投げる
    */
   public async findByIdOrFail(id: string): Promise<Game> {
-    return this.gameRepository.findOneOrFail({ where: { id } });
+    return this.gameRepository.findOneOrFail({
+      where: { id },
+      relations: { player: true },
+    });
   }
 
   /**
@@ -86,16 +92,50 @@ export class GameService {
   public async create(stageId: string, playerId: string): Promise<Game> {
     const game = this.gameRepository.create({
       stageId,
-      isCleared: false,
+      isFinished: false,
+      isCompleted: false,
+      consumedToken: -1,
       player: new Player({ id: playerId }),
     });
     return this.gameRepository.save(game);
   }
 
   /**
+   * ゲームの終了処理
+   * @param gameId ゲームID
+   * @param isCompleted クリアしたかどうか
+   * @param consumedToken 消費したトークン数
+   */
+  public async finish(
+    gameId: string,
+    isCompleted: boolean,
+    consumedToken: number,
+  ): Promise<void> {
+    if (consumedToken < 0) {
+      throw new Error("消費トークン数が不正です");
+    }
+    await this.update(gameId, {
+      isFinished: true,
+      isCompleted,
+      consumedToken,
+    });
+  }
+
+  /**
+   * ゲームを終了する（API用）（Kiroが生成）
+   */
+  public async finishGame(
+    gameId: string,
+    isCompleted: boolean,
+    consumedToken: number,
+  ): Promise<void> {
+    return this.finish(gameId, isCompleted, consumedToken);
+  }
+
+  /**
    * ゲームを更新する（Kiroが生成）
    */
-  public async update(
+  private async update(
     id: string,
     gameData: Partial<Game>,
   ): Promise<Game | null> {

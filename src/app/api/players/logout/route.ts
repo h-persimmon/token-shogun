@@ -9,7 +9,7 @@ export const POST = withErrorHandling(async () => {
   const sessionService = SessionService.getInstance();
 
   // 現在のセッションからプレイヤーIDを取得（Kiroが生成）
-  const currentPlayerId = await sessionService.getCurrentPlayerIdOrNull();
+  const currentPlayerId = await sessionService.getCurrentPlayerOrNull();
   if (!currentPlayerId) {
     return NextResponse.json(
       { error: "ログインしていません" },

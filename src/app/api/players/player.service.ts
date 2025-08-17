@@ -57,8 +57,8 @@ export class PlayerService {
   /**
    * プレイヤーを作成する（Kiroが生成）
    */
-  //   public async create(stageId: string): Promise<Player> {
-  //     const player = this.playerRepository.create({});
-  //     return this.playerRepository.save(player);
-  //   }
+  public async create(id: string, name: string): Promise<Player> {
+    const player = this.playerRepository.create({ id, name });
+    return this.playerRepository.save(player);
+  }
 }

@@ -10,7 +10,7 @@ import { Game } from "../games/game.entity";
 /**
  * DBに保存するプレイヤー情報のエンティティ
  */
-@Entity()
+@Entity("player")
 export class Player {
   /**
    * ID

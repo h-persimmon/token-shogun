@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  type Relation,
 } from "typeorm";
 import { Player } from "../players/player.entity";
 
@@ -55,7 +56,7 @@ export class Game {
    */
   @ManyToOne(() => Player, (player) => player.games)
   @JoinColumn({ name: "player_id" })
-  player!: Player;
+  player!: Relation<Player>;
 
   /**
    * コンストラクタ

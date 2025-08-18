@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NoPlayerSelectedError } from "../error/custom/no-player-selected-error";
-import { Player } from "../../players/player.entity";
+import { type Player } from "@prisma/client";
 import { PlayerService } from "../../players/player.service";
 
 /**

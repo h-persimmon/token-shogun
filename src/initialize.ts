@@ -1,5 +1,5 @@
 import { PlayerService } from "./app/api/players/player.service";
-import { TypeOrmService } from "./app/api/util/db/typeorm.service";
+import { PrismaService } from "./app/api/util/db/prisma.service";
 
 /**
  * プレイヤーを初期化する
@@ -16,7 +16,7 @@ const initializePlayer = async () => {
  */
 const initializeDatabase = async () => {
   try {
-    await TypeOrmService.initialize();
+    await PrismaService.initialize();
     await initializePlayer();
     console.log("データベースの初期化が完了しました");
   } catch (error) {

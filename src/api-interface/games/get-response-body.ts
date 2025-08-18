@@ -1,11 +1,11 @@
-import { Game } from "@/app/api/games/game.entity";
+import type { GameWithPlayer } from "@/app/api/games/game.service";
 
 /**
  * /gamesにGETした際のレスポンスボディの型
  */
-export type GamesGetResponseBody = Game[];
+export type GamesGetResponseBody = GameWithPlayer[];
 
 /**
  * /games/[gameId]にGETした際のレスポンスボディの型
  */
-export type GameGetResponseBody = Game;
+export type GameGetResponseBody = GameWithPlayer;

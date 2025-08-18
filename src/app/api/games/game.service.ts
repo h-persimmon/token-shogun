@@ -1,7 +1,10 @@
-import { Repository } from "typeorm";
-import { Game } from "./game.entity";
-import { TypeOrmService } from "../util/db/typeorm.service";
-import { Player } from "../players/player.entity";
+import { PrismaService } from "../util/db/prisma.service";
+import type { Game, Player } from "@prisma/client";
+
+// プレイヤー情報を含むゲーム型（Kiroが生成）
+export type GameWithPlayer = Game & {
+  player: Player;
+};
 
 /**
  * ゲームに関するサービス（Kiroが生成）
@@ -13,16 +16,9 @@ export class GameService {
   private static instance: GameService;
 
   /**
-   * ゲームに関するリポジトリ
-   */
-  private readonly gameRepository: Repository<Game>;
-
-  /**
    * コンストラクタ（Kiroが生成）
    */
-  private constructor() {
-    this.gameRepository = TypeOrmService.getRepository(Game);
-  }
+  private constructor() {}
 
   /**
    * インスタンスを取得する（Kiroが生成）
@@ -37,67 +33,80 @@ export class GameService {
   /**
    * 全てのゲームを取得する（Kiroが生成）
    */
-  public async findAll(): Promise<Game[]> {
-    return this.gameRepository.find({ relations: { player: true } });
+  public async findAll(): Promise<GameWithPlayer[]> {
+    const prisma = PrismaService.getClient();
+    return prisma.game.findMany({ include: { player: true } });
   }
 
   /**
-   * 指定されたプレイヤーがプレイしたゲームを取得する
+   * 指定されたプレイヤーがプレイしたゲームを取得する（Kiroが生成）
    * @param playerId プレイヤーID
    */
-  public async findByPlayerId(playerId: string): Promise<Game[]> {
-    return this.gameRepository.find({
-      where: {
-        player: new Player({ id: playerId }),
-      },
+  public async findByPlayerId(playerId: string): Promise<GameWithPlayer[]> {
+    const prisma = PrismaService.getClient();
+    return prisma.game.findMany({
+      where: { playerId },
+      include: { player: true },
     });
   }
 
   /**
-   * 指定されたプレイヤーがクリアしたゲームを取得する
+   * 指定されたプレイヤーがクリアしたゲームを取得する（Kiroが生成）
    * @param playerId プレイヤーID
    */
-  public async findCompletedGamesByPlayerId(playerId: string): Promise<Game[]> {
-    return this.gameRepository.find({
+  public async findCompletedGamesByPlayerId(
+    playerId: string,
+  ): Promise<GameWithPlayer[]> {
+    const prisma = PrismaService.getClient();
+    return prisma.game.findMany({
       where: {
-        player: new Player({ id: playerId }),
+        playerId,
         isCompleted: true,
       },
+      include: { player: true },
     });
   }
 
   /**
    * IDでゲームを取得する（Kiroが生成）
    */
-  public async findByIdOrNull(id: string): Promise<Game | null> {
-    return this.gameRepository.findOne({
+  public async findByIdOrNull(id: string): Promise<GameWithPlayer | null> {
+    const prisma = PrismaService.getClient();
+    return prisma.game.findUnique({
       where: { id },
-      relations: { player: true },
+      include: { player: true },
     });
   }
 
   /**
-   * IDでゲームを取得し、なければ例外を投げる
+   * IDでゲームを取得し、なければ例外を投げる（Kiroが生成）
    */
-  public async findByIdOrFail(id: string): Promise<Game> {
-    return this.gameRepository.findOneOrFail({
+  public async findByIdOrFail(id: string): Promise<GameWithPlayer> {
+    const prisma = PrismaService.getClient();
+    const game = await prisma.game.findUnique({
       where: { id },
-      relations: { player: true },
+      include: { player: true },
     });
+    if (!game) {
+      throw new Error(`Game with id ${id} not found`);
+    }
+    return game;
   }
 
   /**
    * ゲームを作成する（Kiroが生成）
    */
   public async create(stageId: string, playerId: string): Promise<Game> {
-    const game = this.gameRepository.create({
-      stageId,
-      isFinished: false,
-      isCompleted: false,
-      consumedToken: -1,
-      player: new Player({ id: playerId }),
+    const prisma = PrismaService.getClient();
+    return prisma.game.create({
+      data: {
+        stageId,
+        isFinished: false,
+        isCompleted: false,
+        consumedToken: -1,
+        playerId,
+      },
     });
-    return this.gameRepository.save(game);
   }
 
   /**
@@ -137,9 +146,15 @@ export class GameService {
    */
   private async update(
     id: string,
-    gameData: Partial<Game>,
+    gameData: Partial<
+      Pick<Game, "isFinished" | "isCompleted" | "consumedToken">
+    >,
   ): Promise<Game | null> {
-    await this.gameRepository.update(id, gameData);
+    const prisma = PrismaService.getClient();
+    await prisma.game.update({
+      where: { id },
+      data: gameData,
+    });
     return this.findByIdOrNull(id);
   }
 
@@ -147,6 +162,7 @@ export class GameService {
    * ゲームを削除する（Kiroが生成）
    */
   public async delete(id: string): Promise<void> {
-    this.gameRepository.delete(id);
+    const prisma = PrismaService.getClient();
+    await prisma.game.delete({ where: { id } });
   }
 }

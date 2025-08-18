@@ -1,4 +1,4 @@
-import { Player } from "@/app/api/players/player.entity";
+import type { Player } from "@prisma/client";
 
 /**
  * /playersにGETした際のレスポンスボディの型

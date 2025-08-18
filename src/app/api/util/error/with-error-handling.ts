@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { TypeOrmService } from "../db/typeorm.service";
-import { DataSourceNotInitializedError } from "./custom/data-source-not-initialized-error";
+import { PrismaService } from "../db/prisma.service";
 
 /**
- * コントローラのエラー処理をラップした関数
+ * コントローラのエラー処理をラップした関数（Kiroが生成）
  * @param handler
  * @returns
  */
@@ -16,9 +15,12 @@ export const withErrorHandling = <
     try {
       return await handler(...args);
     } catch (err) {
-      // もしTypeORMの初期化ができていなければ、初期化して処理をやりなおす
-      if (err instanceof DataSourceNotInitializedError) {
-        await TypeOrmService.initialize();
+      // もしPrismaの初期化ができていなければ、初期化して処理をやりなおす
+      if (
+        err instanceof Error &&
+        err.message.includes("Prisma client is not initialized")
+      ) {
+        await PrismaService.initialize();
         return await handler(...args);
       }
 

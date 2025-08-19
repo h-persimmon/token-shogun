@@ -59,7 +59,6 @@ export class GameEngine {
     this.unitTypeModule = new UnitTypeModule();
     this.unitModule = new UnitModule(this.eventModule, this.unitTypeModule);
     this.stageModule = new StageModule();
-    this.orderModule = new OrderModule(this.unitModule);
 
     // ゲームの初期設定
     const stageOrNull = this.stageModule.findByIdOrNull(stageId);
@@ -67,6 +66,9 @@ export class GameEngine {
       throw new Error(`ステージ ${stageId} は存在しません。`);
     }
     this.stage = stageOrNull;
+
+    this.orderModule = new OrderModule(this.unitModule, this.stage);
+
     this.id = "game-" + Date.now().toString();
     this.createEnemies();
   }

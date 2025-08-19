@@ -2,11 +2,19 @@ import { OrderPostResponseBody } from "@/api-interface/order/post-response-body"
 import { OrderPostRequestBody } from "@/api-interface/order/post-request-body";
 import { headerPrompt, xmlSchema } from "./prompt";
 import { UnitModule } from "../unit/module";
+import { Stage } from "../stage/interface";
+import { TokensCountPostRequestBody } from "@/api-interface/tokens/count/post-request-body";
+import { TokensCountPostResponseBody } from "@/api-interface/tokens/count/post-response-body";
 
 /**
  * 命令に関するモジュール
  */
 export class OrderModule {
+  /**
+   * 現在消費したトークン
+   */
+  public consumedToken: number;
+
   /**
    * コンストラクタ
    */
@@ -15,7 +23,21 @@ export class OrderModule {
      * ユニットに関するモジュール
      */
     private readonly unitModule: UnitModule,
-  ) {}
+
+    /**
+     * ステージ情報
+     */
+    private readonly stage: Stage,
+  ) {
+    this.consumedToken = 0;
+  }
+
+  /**
+   * 残りのトークン数
+   */
+  get remainingToken(): number {
+    return this.stage.maxTokens - this.consumedToken;
+  }
 
   /**
    * AIに命令してゲーム状況を更新する関数
@@ -28,6 +50,9 @@ export class OrderModule {
     const orderResponseBody = await this.sendPromptToServer(prompt);
     console.log(orderResponseBody.output.message.content[0].text); // TODO
     this.updateGameStatus(orderResponseBody.output.message.content[0].text);
+    const tokens = await this.countTokens(userPrompt);
+    this.consumedToken += tokens;
+    console.log(`${this.remainingToken} / ${this.stage.maxTokens}`);
   }
 
   /**
@@ -143,6 +168,22 @@ export class OrderModule {
       body: JSON.stringify(orderRequestBody),
     });
     return response.json();
+  }
+
+  /**
+   * プロンプトのトークン数を計算するAPIを呼び出す関数
+   * @param prompt プロンプト
+   * @returns トークン数
+   */
+  private async countTokens(prompt: string): Promise<number> {
+    const url = "/api/tokens/count";
+    const requestBody: TokensCountPostRequestBody = { prompt };
+    const response = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+    const responseBody: TokensCountPostResponseBody = await response.json();
+    return responseBody.tokens;
   }
 
   /**

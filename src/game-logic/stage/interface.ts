@@ -58,7 +58,7 @@ export interface Stage {
   /**
    * 配置可能な味方ユニット一覧
    */
-  readonly allyUnitIdList: readonly string[];
+  readonly allyUnitIdList: ReadonlyArray<string>;
 
   /**
    * 使用可能なトークン数

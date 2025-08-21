@@ -1,6 +1,8 @@
 import { EventModule } from "./event/module";
+import { GameStatus } from "./game-status";
 import { OrderModule } from "./order/module";
 import { Stage } from "./stage/interface";
+import { TokenModule } from "./token/module";
 import { UnitModule } from "./unit/module";
 import { UnitTypeModule } from "./unit/unit-type/module";
 
@@ -37,6 +39,12 @@ export class GameEngine {
   private readonly unitModule: UnitModule;
 
   /**
+   * トークンに関するモジュール
+   * トークンの管理や計算などを委譲
+   */
+  private readonly tokenModule: TokenModule;
+
+  /**
    * 命令に関するモジュール
    * AIへの命令やそれに伴うユニットの状態変化などを委譲
    */
@@ -54,6 +62,7 @@ export class GameEngine {
     this.eventModule = new EventModule();
     this.unitTypeModule = new UnitTypeModule();
     this.unitModule = new UnitModule(this.eventModule, this.unitTypeModule);
+    this.tokenModule = new TokenModule();
     this.orderModule = new OrderModule(this.unitModule, this.stage);
 
     // IDを設定
@@ -98,45 +107,20 @@ export class GameEngine {
    * ゲーム状況を取得する（Kiroが生成）
    * @returns ゲーム状況オブジェクト
    */
-  public getGameStatus() {
+  public getGameStatus(): GameStatus {
     return {
-      gameId: this.id,
-      stage: {
-        id: this.stage.id,
-        name: this.stage.name,
-        difficulty: this.stage.difficulty,
-        fieldSize: this.stage.fieldSize,
-        maxTokens: this.stage.maxTokens,
-      },
-      enemyUnits: this.unitModule.enemyUnitList.map((unit) => ({
-        id: unit.id,
-        unitType: {
-          id: unit.unitType.id,
-          name: unit.unitType.name,
-          faction: unit.unitType.faction,
-          maxHp: unit.unitType.maxHp,
-          defaultSpeed: unit.unitType.defaultSpeed,
-        },
-        position: unit.position,
-        currentHp: unit.currentHp,
-        currentSpeed: unit.currentSpeed,
-        currentEvent: unit.currentEvent,
-      })),
-      allyUnits: this.unitModule.allyUnitList.map((unit) => ({
-        id: unit.id,
-        unitType: {
-          id: unit.unitType.id,
-          name: unit.unitType.name,
-          faction: unit.unitType.faction,
-          maxHp: unit.unitType.maxHp,
-          defaultSpeed: unit.unitType.defaultSpeed,
-        },
-        position: unit.position,
-        currentHp: unit.currentHp,
-        currentSpeed: unit.currentSpeed,
-        currentEvent: unit.currentEvent,
-      })),
+      stage: this.stage,
+      enemyUnitList: this.unitModule.enemyUnitList,
+      allyUnitList: this.unitModule.allyUnitList,
     };
+  }
+
+  /**
+   * プロンプトのトークン数を計算する関数
+   * @param prompt
+   */
+  public async countTokens(prompt: string): Promise<number> {
+    return this.tokenModule.countTokens(prompt);
   }
 
   /**

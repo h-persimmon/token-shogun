@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GameGetResponseBody } from "@/api-interface/games/get-response-body";
 import { Unit } from "@/game-logic/unit/class";
+import { GameStatus } from "@/game-logic/game-status";
 
 /**
  * ゲームデータを取得する関数（Kiroが生成）
@@ -51,8 +52,9 @@ export default function GamePage() {
   const [gameEngine, setGameEngine] = useState<GameEngine | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [gameStatus, setGameStatus] = useState<any>(null);
+  const [gameStatus, setGameStatus] = useState<GameStatus | null>(null);
   const [prompt, setPrompt] = useState("");
+  const [tokenCount, setTokenCount] = useState(0);
   const [gameData, setGameData] = useState<GameGetResponseBody | null>(null);
 
   useEffect(() => {
@@ -86,8 +88,27 @@ export default function GamePage() {
     }
   }, [gameId]);
 
+  const countTokens = async (text: string) => {
+    if (!gameEngine) {
+      return;
+    }
+
+    try {
+      const promptTokenCount = await gameEngine.countTokens(text);
+      setTokenCount(promptTokenCount);
+    } catch (error) {
+      console.error("トークンカウントエラー:", error);
+    }
+  };
+
+  /**
+   * プロンプトを送信した時の処理
+   * @returns
+   */
   const handleSubmit = async () => {
-    if (!prompt.trim() || !gameEngine) return;
+    if (!prompt.trim() || !gameEngine) {
+      return;
+    }
 
     try {
       await gameEngine.order(prompt);
@@ -313,10 +334,10 @@ export default function GamePage() {
           {/* 敵ユニット情報 */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-2">
-              敵ユニット ({gameStatus.enemyUnits.length}体)
+              敵ユニット ({gameStatus.enemyUnitList.length}体)
             </h2>
             <div className="space-y-4">
-              {gameStatus.enemyUnits.map((unit: Unit) => (
+              {gameStatus.enemyUnitList.map((unit: Unit) => (
                 <div
                   key={unit.id}
                   className="bg-red-50 border border-red-200 p-4 rounded"
@@ -365,15 +386,15 @@ export default function GamePage() {
           {/* 味方ユニット情報 */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-2">
-              味方ユニット ({gameStatus.allyUnits.length}体)
+              味方ユニット ({gameStatus.allyUnitList.length}体)
             </h2>
             <div className="space-y-4">
-              {gameStatus.allyUnits.length === 0 ? (
+              {gameStatus.allyUnitList.length === 0 ? (
                 <p className="text-gray-500">
                   味方ユニットはまだ配置されていません
                 </p>
               ) : (
-                gameStatus.allyUnits.map((unit: Unit) => (
+                gameStatus.allyUnitList.map((unit: Unit) => (
                   <div
                     key={unit.id}
                     className="bg-blue-50 border border-blue-200 p-4 rounded"
@@ -432,10 +453,15 @@ export default function GamePage() {
           <div className="flex-1 flex flex-col">
             <textarea
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => {
+                setPrompt(e.target.value);
+                countTokens(e.target.value);
+              }}
               placeholder="ゲームコマンドを入力してください..."
               className="flex-1 w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+
+            <p>トークン数：{tokenCount}</p>
 
             <button
               onClick={handleSubmit}

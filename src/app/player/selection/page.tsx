@@ -56,7 +56,9 @@ export default function PlayerSelectionPage() {
    * ログイン処理（Kiroが生成）
    */
   const handleLogin = async () => {
-    if (!selectedPlayer) return;
+    if (!selectedPlayer) {
+      return;
+    }
 
     setIsLoggingIn(true);
     try {

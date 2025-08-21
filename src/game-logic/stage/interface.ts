@@ -2,7 +2,7 @@ import { Position } from "../position/position";
 import { Difficulty } from "./difficulty";
 
 /**
- * ステージを表すインターフェース
+ * ステージ情報を表すインターフェース
  */
 export interface Stage {
   /**

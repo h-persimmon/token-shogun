@@ -1,5 +1,6 @@
 import { PrismaService } from "../util/db/prisma.service";
 import type { Player } from "@prisma/client";
+import { ResourceNotFoundError } from "../util/error/custom/resource-not-found-error";
 
 /**
  * ゲームに関するサービス（Kiroが生成）
@@ -48,7 +49,7 @@ export class PlayerService {
     const prisma = PrismaService.getClient();
     const player = await prisma.player.findUnique({ where: { id } });
     if (!player) {
-      throw new Error(`Player with id ${id} not found`);
+      throw new ResourceNotFoundError("Player", id);
     }
     return player;
   }

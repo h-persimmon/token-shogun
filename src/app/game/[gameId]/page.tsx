@@ -69,7 +69,7 @@ export default function GamePage() {
 
         const stageId = fetchedGameData.stageId!;
 
-        const engine = new GameEngine(stageId);
+        const engine = await GameEngine.createInstance(stageId);
         setGameEngine(engine);
         setGameStatus(engine.getGameStatus());
       } catch (err) {

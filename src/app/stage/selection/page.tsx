@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { GamesPostRequestBody } from "../../../api-interface/games/post-request-body";
 import type { GamesPostResponseBody } from "../../../api-interface/games/post-response-body";
-import { stageList } from "@/game-logic/stage/list";
+import { STAGE_LIST } from "@/game-logic/stage/list";
 import { Stage } from "@/game-logic/stage/interface";
 
 // （Kiroが生成）
@@ -79,7 +79,7 @@ export default function StageSelectionPage() {
 
       {/* ステージマップ */}
       <div className="relative z-10 w-full h-full">
-        {stageList.map((stage) => (
+        {STAGE_LIST.map((stage) => (
           <div
             key={stage.id}
             className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-300 hover:scale-110 hover:z-30 ${loading === stage.id ? "animate-pulse" : ""}`}

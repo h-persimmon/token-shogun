@@ -1,5 +1,6 @@
 import { PrismaService } from "../util/db/prisma.service";
 import type { Game, Player } from "@prisma/client";
+import { ResourceNotFoundError } from "../util/error/custom/resource-not-found-error";
 
 // プレイヤー情報を含むゲーム型（Kiroが生成）
 export type GameWithPlayer = Game & {
@@ -88,7 +89,7 @@ export class GameService {
       include: { player: true },
     });
     if (!game) {
-      throw new Error(`Game with id ${id} not found`);
+      throw new ResourceNotFoundError("Game", id);
     }
     return game;
   }
@@ -156,13 +157,5 @@ export class GameService {
       data: gameData,
     });
     return this.findByIdOrNull(id);
-  }
-
-  /**
-   * ゲームを削除する（Kiroが生成）
-   */
-  public async delete(id: string): Promise<void> {
-    const prisma = PrismaService.getClient();
-    await prisma.game.delete({ where: { id } });
   }
 }

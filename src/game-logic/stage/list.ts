@@ -1,10 +1,14 @@
+/**
+ * バックエンドから提供
+ */
+
 import { DIFFICULTY, STAGE, UNIT } from "@/constants";
 import { Stage } from "./interface";
 
 /**
  * ステージ一覧
  */
-export const stageList: Stage[] = [
+export const STAGE_LIST: ReadonlyArray<Stage> = [
   {
     id: STAGE.S01.ID,
     name: STAGE.S01.NAME,

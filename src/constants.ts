@@ -16,7 +16,7 @@ export const DIFFICULTY = {
 } as const;
 
 /**
- * ステージ
+ * ステージ情報
  */
 export const STAGE = {
   S01: {

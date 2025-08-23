@@ -18,37 +18,37 @@ export class GameEngine {
   /**
    * ステージ情報
    */
-  private readonly stage: Stage;
+  public readonly stage: Stage;
 
   /**
    * イベントに関するモジュール
    * イベントの管理などを委譲
    */
-  private readonly eventModule: EventModule;
+  public readonly eventModule: EventModule;
 
   /**
    * ユニットタイプに関するモジュール
    * ユニットタイプの管理などを委譲
    */
-  private readonly unitTypeModule: UnitTypeModule;
+  public readonly unitTypeModule: UnitTypeModule;
 
   /**
    * ユニットに関するモジュール
    * ユニットの作成・管理などを委譲
    */
-  private readonly unitModule: UnitModule;
+  public readonly unitModule: UnitModule;
 
   /**
    * トークンに関するモジュール
    * トークンの管理や計算などを委譲
    */
-  private readonly tokenModule: TokenModule;
+  public readonly tokenModule: TokenModule;
 
   /**
    * 命令に関するモジュール
    * AIへの命令やそれに伴うユニットの状態変化などを委譲
    */
-  private readonly orderModule: OrderModule;
+  public readonly orderModule: OrderModule;
 
   /**
    * コンストラクタ
@@ -62,8 +62,8 @@ export class GameEngine {
     this.eventModule = new EventModule();
     this.unitTypeModule = new UnitTypeModule();
     this.unitModule = new UnitModule(this.eventModule, this.unitTypeModule);
-    this.tokenModule = new TokenModule();
-    this.orderModule = new OrderModule(this.unitModule, this.stage);
+    this.tokenModule = new TokenModule(this.stage);
+    this.orderModule = new OrderModule(this.unitModule, this.tokenModule);
 
     // IDを設定
     this.id = "game-" + Date.now().toString();

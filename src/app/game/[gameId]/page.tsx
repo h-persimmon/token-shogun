@@ -113,9 +113,11 @@ export default function GamePage() {
     try {
       await gameEngine.order(prompt);
       // ゲーム状況を更新
+      setGameEngine(gameEngine);
       setGameStatus(gameEngine.getGameStatus());
       // プロンプトをクリア
       setPrompt("");
+      countTokens("");
     } catch (error) {
       console.error("プロンプト処理エラー:", error);
     }
@@ -461,7 +463,11 @@ export default function GamePage() {
               className="flex-1 w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
-            <p>トークン数：{tokenCount}</p>
+            <p>入力のトークン数：{tokenCount}</p>
+            <p>
+              使用可能トークン数：{gameEngine.tokenModule.remainingTokens} /{" "}
+              {gameEngine.stage.maxTokens}
+            </p>
 
             <button
               onClick={handleSubmit}

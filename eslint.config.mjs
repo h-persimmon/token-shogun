@@ -11,6 +11,12 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      curly: "error", // ifやforに中括弧がなければエラー
+      "@typescript-eslint/no-explicit-any": "off", // any型を許容（いつかやめたい）
+    },
+  },
 ];
 
 export default eslintConfig;

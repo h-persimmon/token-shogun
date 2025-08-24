@@ -1,7 +1,8 @@
-import { OrderResponseBody } from "@/api-interface/order/response-body";
-import { OrderRequestBody } from "@/api-interface/order/request-body";
+import { OrderPostResponseBody } from "@/api-interface/order/post-response-body";
+import { OrderPostRequestBody } from "@/api-interface/order/post-request-body";
 import { headerPrompt, xmlSchema } from "./prompt";
 import { UnitModule } from "../unit/module";
+import { TokenModule } from "../token/module";
 
 /**
  * 命令に関するモジュール
@@ -15,6 +16,11 @@ export class OrderModule {
      * ユニットに関するモジュール
      */
     private readonly unitModule: UnitModule,
+
+    /**
+     * トークンに関するモジュール
+     */
+    private readonly tokenModule: TokenModule,
   ) {}
 
   /**
@@ -28,6 +34,7 @@ export class OrderModule {
     const orderResponseBody = await this.sendPromptToServer(prompt);
     console.log(orderResponseBody.output.message.content[0].text); // TODO
     this.updateGameStatus(orderResponseBody.output.message.content[0].text);
+    await this.tokenModule.consumeToken(userPrompt);
   }
 
   /**
@@ -133,9 +140,11 @@ export class OrderModule {
    * @param gameEngine ゲームエンジン
    * @returns レスポンスボディ
    */
-  private async sendPromptToServer(prompt: string): Promise<OrderResponseBody> {
+  private async sendPromptToServer(
+    prompt: string,
+  ): Promise<OrderPostResponseBody> {
     const url = "/api/order";
-    const orderRequestBody: OrderRequestBody = { prompt };
+    const orderRequestBody: OrderPostRequestBody = { prompt };
     const response = await fetch(url, {
       method: "POST",
       body: JSON.stringify(orderRequestBody),

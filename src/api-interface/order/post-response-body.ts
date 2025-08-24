@@ -1,4 +1,4 @@
-export interface OrderResponseBody {
+export interface OrderPostResponseBody {
   metrics: { latencyMs: number };
   output: {
     message: {

@@ -1,0 +1,31 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id    String @id
+  name  String
+  games Game[]
+
+  @@map("player")
+}
+
+model Game {
+  id            String  @id @default(cuid())
+  stageId       String  @map("stage_id")
+  isFinished    Boolean @map("is_finished")
+  isCompleted   Boolean @map("is_completed")
+  consumedToken Int     @map("consumed_token")
+  playerId      String  @map("player_id")
+  player        Player  @relation(fields: [playerId], references: [id])
+
+  @@map("game")
+}

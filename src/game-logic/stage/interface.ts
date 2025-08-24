@@ -2,13 +2,13 @@ import { Position } from "../position/position";
 import { Difficulty } from "./difficulty";
 
 /**
- * ステージを表すインターフェース
+ * ステージ情報を表すインターフェース
  */
 export interface Stage {
   /**
    * ID
    */
-  readonly id: number;
+  readonly id: string;
 
   /**
    * 名前
@@ -19,6 +19,11 @@ export interface Stage {
    * 難易度
    */
   readonly difficulty: Difficulty;
+
+  /**
+   * マップでの位置
+   */
+  readonly mapPosition: Position;
 
   /**
    * フィールドサイズ
@@ -53,7 +58,7 @@ export interface Stage {
   /**
    * 配置可能な味方ユニット一覧
    */
-  readonly allyUnitIdList: readonly string[];
+  readonly allyUnitIdList: ReadonlyArray<string>;
 
   /**
    * 使用可能なトークン数

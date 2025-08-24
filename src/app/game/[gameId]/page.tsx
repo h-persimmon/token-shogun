@@ -128,8 +128,7 @@ export default function GamePage() {
    */
   const handleSuccess = async () => {
     try {
-      const consumedToken = gameStatus?.stage?.maxTokens || 100; // デモ用の値
-      await finishGame(gameId, true, consumedToken);
+      await finishGame(gameId, true, gameEngine!.tokenModule.consumedToken);
       router.push(`/game/${gameId}/result`);
     } catch (error) {
       console.error("ゲーム成功処理エラー:", error);

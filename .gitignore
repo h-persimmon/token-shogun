@@ -41,8 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# sqlite
-sqlite3/
+# prisma
+prisma/migrations
+*.db
 
 # vscode
 .vscode

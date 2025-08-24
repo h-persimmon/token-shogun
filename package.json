@@ -2,16 +2,17 @@
   "name": "kiro-sample-004",
   "version": "0.1.0",
   "private": true,
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "lint": "next lint",
     "format": "prettier . -w",
     "build": "next build",
     "start": "next start",
-    "initialize": "ts-node --project tsconfig.node.json src/initialize.ts",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@anthropic-ai/tokenizer": "^0.0.4",

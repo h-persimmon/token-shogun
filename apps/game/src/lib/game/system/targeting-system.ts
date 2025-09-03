@@ -1,0 +1,887 @@
+import {
+  type AttackComponent,
+  calculateDistance,
+} from "../components/attack-component";
+import {
+  type EnemyComponent,
+  getStructureTargetPriority,
+} from "../components/enemy-component";
+import type { HealthComponent } from "../components/health-component";
+import type {
+  Point,
+  PositionComponent,
+} from "../components/position-component";
+import {
+  canDeployUnit,
+  getStructurePriority,
+  isDefenseStructure,
+  isGateStructure,
+  type StructureComponent,
+} from "../components/structure-component";
+import {
+  clearTarget,
+  setEntityTarget,
+  type TargetComponent,
+} from "../components/target-component";
+import type { Entity } from "../entities/entity";
+import type { createEntityManager } from "../entities/entity-manager";
+
+type EntityManager = ReturnType<typeof createEntityManager>;
+
+export class TargetingSystem {
+  private entityManager: EntityManager;
+
+  constructor(entityManager: EntityManager) {
+    this.entityManager = entityManager;
+  }
+
+  /**
+   * システムの更新処理
+   * 攻撃可能なエンティティの目標選択を行う
+   */
+  public update(): void {
+    // 攻撃可能なエンティティ（AttackComponentとTargetComponentを持つ）を取得
+    const attackers = this.entityManager.queryEntities({
+      required: ["position", "attack", "target"],
+    });
+
+    for (const attacker of attackers) {
+      this.updateEntityTarget(attacker);
+    }
+  }
+
+  /**
+   * 指定されたエンティティの攻撃範囲内にある敵を検索
+   * @param attackerEntity 攻撃者エンティティ
+   * @returns 攻撃範囲内の敵エンティティ配列
+   */
+  public findEnemiesInRange(attackerEntity: Entity): Entity[] {
+    const attackerPos = attackerEntity.components.get(
+      "position",
+    ) as PositionComponent;
+    const attackComponent = attackerEntity.components.get(
+      "attack",
+    ) as AttackComponent;
+
+    if (!attackerPos || !attackComponent) {
+      return [];
+    }
+
+    // 全エンティティから攻撃対象を検索
+    const allEntities = this.entityManager.getAllEntities();
+    const enemiesInRange: Entity[] = [];
+
+    for (const entity of allEntities) {
+      // 攻撃可能な目標かチェック
+      if (!this.canAttackTarget(attackerEntity, entity)) {
+        continue;
+      }
+
+      const targetPos = entity.components.get("position") as PositionComponent;
+      if (!targetPos) continue;
+
+      // 攻撃範囲内かチェック
+      const distance = calculateDistance(attackerPos.point, targetPos.point);
+      if (distance <= attackComponent.range) {
+        enemiesInRange.push(entity);
+      }
+    }
+
+    return enemiesInRange;
+  }
+
+  /**
+   * 距離と優先度に基づいて最適な攻撃目標を選択
+   * @param attackerEntity 攻撃者エンティティ
+   * @param candidates 候補エンティティ配列
+   * @returns 最適な攻撃目標エンティティ（見つからない場合はnull）
+   */
+  public selectBestTarget(
+    attackerEntity: Entity,
+    candidates: Entity[],
+  ): Entity | null {
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const attackerPos = attackerEntity.components.get(
+      "position",
+    ) as PositionComponent;
+    if (!attackerPos) {
+      return null;
+    }
+
+    let bestTarget: Entity | null = null;
+    let bestScore = -1;
+
+    for (const candidate of candidates) {
+      const score = this.calculateTargetScore(attackerEntity, candidate);
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestTarget = candidate;
+      }
+    }
+
+    return bestTarget;
+  }
+
+  /**
+   * 目標エンティティのスコアを計算
+   * @param attackerEntity 攻撃者エンティティ
+   * @param targetEntity 目標エンティティ
+   * @returns 目標スコア（高いほど優先度が高い）
+   */
+  public calculateTargetScore(
+    attackerEntity: Entity,
+    targetEntity: Entity,
+  ): number {
+    const attackerPos = attackerEntity.components.get(
+      "position",
+    ) as PositionComponent;
+    const targetPos = targetEntity.components.get(
+      "position",
+    ) as PositionComponent;
+    const targetHealth = targetEntity.components.get(
+      "health",
+    ) as HealthComponent;
+
+    if (
+      !attackerPos ||
+      !targetPos ||
+      !targetHealth ||
+      targetHealth.currentHealth <= 0
+    ) {
+      return -1; // 無効な目標
+    }
+
+    // 基本スコア計算
+    const distance = calculateDistance(attackerPos.point, targetPos.point);
+    const distanceScore = this.calculateDistanceScore(distance);
+    const healthScore = this.calculateHealthScore(targetHealth);
+    const typeScore = this.calculateTypeScore(targetEntity);
+    const threatScore = this.calculateThreatScore(targetEntity, attackerEntity);
+
+    // 重み付きスコア合計
+    const totalScore =
+      distanceScore * 0.4 + // 距離の重要度: 40%
+      healthScore * 0.2 + // 体力の重要度: 20%
+      typeScore * 0.25 + // 種類の重要度: 25%
+      threatScore * 0.15; // 脅威度の重要度: 15%
+
+    return Math.max(0, totalScore);
+  }
+
+  /**
+   * 距離に基づくスコアを計算
+   * @param distance 距離
+   * @returns 距離スコア（近いほど高い）
+   */
+  private calculateDistanceScore(distance: number): number {
+    if (distance <= 0) return 100;
+
+    // 距離が近いほど高スコア（最大100点）
+    const maxDistance = 300; // 最大考慮距離
+    const normalizedDistance = Math.min(distance, maxDistance) / maxDistance;
+    return (1 - normalizedDistance) * 100;
+  }
+
+  /**
+   * 体力に基づくスコアを計算
+   * @param healthComponent 体力コンポーネント
+   * @returns 体力スコア（体力が少ないほど高い）
+   */
+  private calculateHealthScore(healthComponent: HealthComponent): number {
+    if (healthComponent.maxHealth <= 0) return 0;
+
+    // 体力が少ないほど高スコア（最大100点）
+    const healthRatio =
+      healthComponent.currentHealth / healthComponent.maxHealth;
+    return (1 - healthRatio) * 100;
+  }
+
+  /**
+   * エンティティの種類に基づくスコアを計算
+   * @param targetEntity 目標エンティティ
+   * @returns 種類スコア
+   */
+  private calculateTypeScore(targetEntity: Entity): number {
+    const enemyComponent = targetEntity.components.get(
+      "enemy",
+    ) as EnemyComponent;
+    const structureComponent = targetEntity.components.get(
+      "structure",
+    ) as StructureComponent;
+
+    // 構造物は高優先度
+    if (structureComponent) {
+      // 構造物の基本優先度を使用
+      const basePriority = getStructurePriority(structureComponent);
+
+      // 重要な構造物（勝利条件に関わる）はさらに高優先度
+      if (structureComponent.isCriticalForLose) {
+        return Math.min(basePriority + 20, 100);
+      }
+
+      return basePriority;
+    }
+
+    // 敵の種類による優先度
+    if (enemyComponent) {
+      switch (enemyComponent.enemyType) {
+        case "fast":
+          return 80; // 高速敵は高優先度
+        case "heavy":
+          return 40; // 重装敵は低優先度
+        default:
+          return 60; // 基本敵は中優先度
+      }
+    }
+
+    return 50; // デフォルト
+  }
+
+  /**
+   * 脅威度に基づくスコアを計算
+   * @param targetEntity 目標エンティティ
+   * @param attackerEntity 攻撃者エンティティ
+   * @returns 脅威度スコア
+   */
+  private calculateThreatScore(
+    targetEntity: Entity,
+    attackerEntity: Entity,
+  ): number {
+    const targetAttack = targetEntity.components.get(
+      "attack",
+    ) as AttackComponent;
+    const attackerHealth = attackerEntity.components.get(
+      "health",
+    ) as HealthComponent;
+
+    if (!targetAttack || !attackerHealth) {
+      return 0;
+    }
+
+    // 攻撃力が高い敵ほど脅威度が高い
+    const damageRatio =
+      targetAttack.damage / Math.max(attackerHealth.currentHealth, 1);
+    return Math.min(damageRatio * 100, 100);
+  }
+
+  /**
+   * エンティティが敵かどうかを判定
+   * @param entity 判定対象エンティティ
+   * @returns 敵の場合true
+   */
+  public isEnemyEntity(entity: Entity): boolean {
+    return entity.components.has("enemy");
+  }
+
+  /**
+   * エンティティが味方かどうかを判定
+   * @param entity 判定対象エンティティ
+   * @returns 味方の場合true
+   */
+  public isFriendlyEntity(entity: Entity): boolean {
+    return entity.components.has("unit") || entity.components.has("structure");
+  }
+
+  /**
+   * 2つのエンティティが敵対関係にあるかを判定
+   * @param entity1 エンティティ1
+   * @param entity2 エンティティ2
+   * @returns 敵対関係にある場合true
+   */
+  public areEntitiesHostile(entity1: Entity, entity2: Entity): boolean {
+    const isEntity1Enemy = this.isEnemyEntity(entity1);
+    const isEntity1Friendly = this.isFriendlyEntity(entity1);
+    const isEntity2Enemy = this.isEnemyEntity(entity2);
+    const isEntity2Friendly = this.isFriendlyEntity(entity2);
+
+    // 敵と味方は敵対関係
+    if (
+      (isEntity1Enemy && isEntity2Friendly) ||
+      (isEntity1Friendly && isEntity2Enemy)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * エンティティが攻撃可能な目標かを判定
+   * @param attackerEntity 攻撃者エンティティ
+   * @param targetEntity 目標エンティティ
+   * @returns 攻撃可能な場合true
+   */
+  public canAttackTarget(
+    attackerEntity: Entity,
+    targetEntity: Entity,
+  ): boolean {
+    // 自分自身は攻撃できない
+    if (attackerEntity.id === targetEntity.id) {
+      return false;
+    }
+
+    // 目標が有効でない場合は攻撃できない
+    if (!this.isValidTarget(targetEntity)) {
+      return false;
+    }
+
+    // 敵対関係にない場合は攻撃できない
+    if (!this.areEntitiesHostile(attackerEntity, targetEntity)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * 目標の有効性をチェック
+   * @param targetEntity 目標エンティティ
+   * @returns 有効な目標の場合true
+   */
+  public isValidTarget(targetEntity: Entity): boolean {
+    // 搭乗可能なStructureの場合
+    const structureComponent = targetEntity.components.get(
+      "structure",
+    ) as StructureComponent;
+    if (structureComponent && canDeployUnit(structureComponent)) {
+      return true;
+    }
+
+    const healthComponent = targetEntity.components.get(
+      "health",
+    ) as HealthComponent;
+    const positionComponent = targetEntity.components.get(
+      "position",
+    ) as PositionComponent;
+
+    // 体力があり、位置情報がある場合のみ有効
+    return (
+      healthComponent?.currentHealth > 0 && positionComponent !== undefined
+    );
+  }
+
+  /**
+   * 指定されたエンティティの目標を更新
+   * @param attackerEntity 攻撃者エンティティ
+   */
+  private updateEntityTarget(attackerEntity: Entity): void {
+    const targetComponent = attackerEntity.components.get(
+      "target",
+    ) as TargetComponent;
+    if (!targetComponent) return;
+
+    // 敵エンティティの場合は門を優先的に攻撃目標にする
+    if (this.isEnemyEntity(attackerEntity)) {
+      this.updateEnemyTarget(attackerEntity, targetComponent);
+      return;
+    }
+
+    // 味方エンティティの通常の目標選択処理
+    this.updateFriendlyTarget(attackerEntity, targetComponent);
+  }
+
+  /**
+   * 敵エンティティの目標を更新（構造物優先度に基づく）
+   * @param enemyEntity 敵エンティティ
+   * @param targetComponent 目標コンポーネント
+   */
+  private updateEnemyTarget(
+    enemyEntity: Entity,
+    targetComponent: TargetComponent,
+  ): void {
+    // 現在の目標が有効かチェック
+    if (targetComponent.targetEntityId) {
+      const currentTarget = this.entityManager.getEntity(
+        targetComponent.targetEntityId,
+      );
+      if (!currentTarget || !this.isValidTarget(currentTarget)) {
+        // 現在の目標が無効になった場合はクリア
+        clearTarget(targetComponent);
+      }
+    }
+
+    // 目標がない場合は新しい目標を探す
+    if (!targetComponent.targetEntityId) {
+      const enemyComponent = enemyEntity.components.get(
+        "enemy",
+      ) as EnemyComponent;
+      if (!enemyComponent) return;
+
+      // 敵の構造物優先度に基づいて目標を選択
+      const priority = getStructureTargetPriority(enemyComponent);
+      let bestTarget: Entity | null = null;
+
+      // 攻撃範囲内の目標を検索
+      const friendlyTargetsInRange =
+        this.findFriendlyTargetsInRange(enemyEntity);
+
+      if (friendlyTargetsInRange.length > 0) {
+        bestTarget = this.selectBestTargetByPriority(
+          enemyEntity,
+          friendlyTargetsInRange,
+          priority,
+        );
+      }
+
+      // 攻撃範囲内に目標がない場合は、最も近い優先目標を探す
+      if (!bestTarget) {
+        bestTarget = this.findNearestTargetByPriority(enemyEntity, priority);
+      }
+
+      if (bestTarget) {
+        setEntityTarget(targetComponent, bestTarget.id);
+      }
+    }
+  }
+
+  /**
+   * 最も近い味方目標を検索
+   * @param enemyEntity 敵エンティティ
+   * @returns 最も近い味方エンティティ（見つからない場合はnull）
+   */
+  private findNearestFriendlyTarget(enemyEntity: Entity): Entity | null {
+    const enemyPos = enemyEntity.components.get(
+      "position",
+    ) as PositionComponent;
+    if (!enemyPos) return null;
+
+    const allEntities = this.entityManager.getAllEntities();
+    let nearestTarget: Entity | null = null;
+    let nearestDistance = Infinity;
+
+    for (const entity of allEntities) {
+      if (!this.isFriendlyEntity(entity) || !this.isValidTarget(entity)) {
+        continue;
+      }
+
+      const targetPos = entity.components.get("position") as PositionComponent;
+      if (!targetPos) continue;
+
+      const distance = calculateDistance(enemyPos.point, targetPos.point);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestTarget = entity;
+      }
+    }
+
+    return nearestTarget;
+  }
+
+  /**
+   * 味方エンティティの目標を更新
+   * @param friendlyEntity 味方エンティティ
+   * @param targetComponent 目標コンポーネント
+   */
+  private updateFriendlyTarget(
+    friendlyEntity: Entity,
+    targetComponent: TargetComponent,
+  ): void {
+    // 現在の目標が有効かチェック
+    let currentTarget: Entity | null = null;
+    let currentTargetScore = -1;
+
+    if (targetComponent.targetEntityId) {
+      currentTarget =
+        this.entityManager.getEntity(targetComponent.targetEntityId) || null;
+
+      // 現在の目標が無効になった場合はクリア
+      if (currentTarget && !this.isValidTarget(currentTarget)) {
+        clearTarget(targetComponent);
+        currentTarget = null;
+      } else if (currentTarget) {
+        // 現在の目標のスコアを計算
+        currentTargetScore = this.calculateTargetScore(
+          friendlyEntity,
+          currentTarget,
+        );
+      }
+    }
+
+    // 攻撃範囲内の敵を検索
+    const enemiesInRange = this.findEnemiesInRange(friendlyEntity);
+
+    // 現在の目標が範囲外になった場合は目標変更を検討
+    if (currentTarget && !enemiesInRange.includes(currentTarget)) {
+      currentTarget = null;
+      currentTargetScore = -1;
+    }
+
+    // 新しい最適な目標を選択
+    const bestTarget = this.selectBestTarget(friendlyEntity, enemiesInRange);
+    const bestTargetScore = bestTarget
+      ? this.calculateTargetScore(friendlyEntity, bestTarget)
+      : -1;
+
+    // 目標変更の判定
+    if (
+      this.shouldChangeTarget(
+        currentTarget,
+        currentTargetScore,
+        bestTarget,
+        bestTargetScore,
+      )
+    ) {
+      if (bestTarget) {
+        setEntityTarget(targetComponent, bestTarget.id);
+      } else {
+        clearTarget(targetComponent);
+      }
+    }
+  }
+
+  /**
+   * 構造物優先度に基づいて最適な目標を選択
+   * @param attackerEntity 攻撃者エンティティ
+   * @param candidates 候補エンティティ配列
+   * @param priority 構造物優先度
+   * @returns 最適な攻撃目標エンティティ（見つからない場合はnull）
+   */
+  private selectBestTargetByPriority(
+    attackerEntity: Entity,
+    candidates: Entity[],
+    priority: string,
+  ): Entity | null {
+    if (candidates.length === 0) return null;
+
+    // 優先度に基づいて候補をフィルタリング
+    const prioritizedCandidates = this.filterCandidatesByPriority(
+      candidates,
+      priority,
+    );
+
+    if (prioritizedCandidates.length > 0) {
+      // 優先度の高い候補から最適な目標を選択
+      return this.selectBestTarget(attackerEntity, prioritizedCandidates);
+    }
+
+    // 優先度の高い候補がない場合は、通常の選択を行う
+    return this.selectBestTarget(attackerEntity, candidates);
+  }
+
+  /**
+   * 構造物優先度に基づいて候補をフィルタリング
+   * @param candidates 候補エンティティ配列
+   * @param priority 構造物優先度
+   * @returns フィルタリングされた候補配列
+   */
+  private filterCandidatesByPriority(
+    candidates: Entity[],
+    priority: string,
+  ): Entity[] {
+    const filtered: Entity[] = [];
+
+    for (const candidate of candidates) {
+      const structureComponent = candidate.components.get(
+        "structure",
+      ) as StructureComponent;
+
+      if (structureComponent) {
+        // 構造物の場合は優先度に基づいてフィルタリング
+        if (this.matchesStructurePriority(structureComponent, priority)) {
+          filtered.push(candidate);
+        }
+      } else if (priority === "any") {
+        // "any"の場合はユニットも含める
+        filtered.push(candidate);
+      }
+    }
+
+    return filtered;
+  }
+
+  /**
+   * 構造物が指定された優先度にマッチするかチェック
+   * @param structure 構造物コンポーネント
+   * @param priority 優先度
+   * @returns マッチする場合true
+   */
+  private matchesStructurePriority(
+    structure: StructureComponent,
+    priority: string,
+  ): boolean {
+    switch (priority) {
+      case "gate":
+        return isGateStructure(structure);
+      case "defense":
+        return isDefenseStructure(structure);
+      case "any":
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * 構造物優先度に基づいて最も近い目標を検索
+   * @param enemyEntity 敵エンティティ
+   * @param priority 構造物優先度
+   * @returns 最も近い目標エンティティ（見つからない場合はnull）
+   */
+  private findNearestTargetByPriority(
+    enemyEntity: Entity,
+    priority: string,
+  ): Entity | null {
+    const enemyPos = enemyEntity.components.get(
+      "position",
+    ) as PositionComponent;
+    if (!enemyPos) return null;
+
+    const allEntities = this.entityManager.getAllEntities();
+    let nearestTarget: Entity | null = null;
+    let nearestDistance = Infinity;
+
+    // まず優先度の高い構造物を探す
+    for (const entity of allEntities) {
+      if (!this.isFriendlyEntity(entity) || !this.isValidTarget(entity)) {
+        continue;
+      }
+
+      const structureComponent = entity.components.get(
+        "structure",
+      ) as StructureComponent;
+
+      // 構造物の場合は優先度をチェック
+      if (
+        structureComponent &&
+        !this.matchesStructurePriority(structureComponent, priority)
+      ) {
+        continue;
+      }
+
+      // ユニットの場合は"any"優先度の時のみ対象
+      if (!structureComponent && priority !== "any") {
+        continue;
+      }
+
+      const targetPos = entity.components.get("position") as PositionComponent;
+      if (!targetPos) continue;
+
+      const distance = calculateDistance(enemyPos.point, targetPos.point);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestTarget = entity;
+      }
+    }
+
+    // 優先度の高い目標が見つからない場合は、任意の味方目標を探す
+    if (!nearestTarget && priority !== "any") {
+      return this.findNearestFriendlyTarget(enemyEntity);
+    }
+
+    return nearestTarget;
+  }
+
+  /**
+   * 敵の攻撃範囲内にある味方目標を検索
+   * @param enemyEntity 敵エンティティ
+   * @returns 攻撃範囲内の味方エンティティ配列
+   */
+  private findFriendlyTargetsInRange(enemyEntity: Entity): Entity[] {
+    const enemyPos = enemyEntity.components.get(
+      "position",
+    ) as PositionComponent;
+    const attackComponent = enemyEntity.components.get(
+      "attack",
+    ) as AttackComponent;
+
+    if (!enemyPos || !attackComponent) {
+      return [];
+    }
+
+    const allEntities = this.entityManager.getAllEntities();
+    const targetsInRange: Entity[] = [];
+
+    for (const entity of allEntities) {
+      // 味方エンティティかチェック
+      if (!this.isFriendlyEntity(entity)) {
+        continue;
+      }
+
+      // 攻撃可能な目標かチェック
+      if (!this.isValidTarget(entity)) {
+        continue;
+      }
+
+      const targetPos = entity.components.get("position") as PositionComponent;
+      if (!targetPos) continue;
+
+      // 攻撃範囲内かチェック
+      const distance = calculateDistance(enemyPos.point, targetPos.point);
+      if (distance <= attackComponent.range) {
+        targetsInRange.push(entity);
+      }
+    }
+
+    return targetsInRange;
+  }
+
+  /**
+   * 目標を変更すべきかどうかを判定
+   * @param currentTarget 現在の目標
+   * @param currentScore 現在の目標のスコア
+   * @param newTarget 新しい候補目標
+   * @param newScore 新しい候補目標のスコア
+   * @returns 目標を変更すべき場合true
+   */
+  private shouldChangeTarget(
+    currentTarget: Entity | null,
+    currentScore: number,
+    newTarget: Entity | null,
+    newScore: number,
+  ): boolean {
+    // 現在の目標がない場合は新しい目標に変更
+    if (!currentTarget) {
+      return newTarget !== null;
+    }
+
+    // 新しい候補がない場合は現在の目標を維持
+    if (!newTarget) {
+      return false;
+    }
+
+    // 同じ目標の場合は変更しない
+    if (currentTarget.id === newTarget.id) {
+      return false;
+    }
+
+    // スコア差による目標変更判定
+    const SCORE_THRESHOLD = 20; // 目標変更に必要な最小スコア差
+    return newScore > currentScore + SCORE_THRESHOLD;
+  }
+
+  /**
+   * 強制的に目標を設定（手動制御用）
+   * @param attackerEntityId 攻撃者エンティティID
+   * @param targetEntityId 目標エンティティID
+   * @returns 設定に成功した場合true
+   */
+  public forceSetTarget(
+    attackerEntityId: string,
+    targetEntityId: string,
+  ): boolean {
+    const attackerEntity = this.entityManager.getEntity(attackerEntityId);
+    const targetEntity = this.entityManager.getEntity(targetEntityId);
+
+    if (!attackerEntity || !targetEntity) {
+      return false;
+    }
+
+    const targetComponent = attackerEntity.components.get(
+      "target",
+    ) as TargetComponent;
+    if (!targetComponent) {
+      return false;
+    }
+
+    // 目標の有効性をチェック
+    if (!this.isValidTarget(targetEntity)) {
+      return false;
+    }
+
+    // 敵味方の判定
+    const isAttackerEnemy = this.isEnemyEntity(attackerEntity);
+    const isTargetEnemy = this.isEnemyEntity(targetEntity);
+    const isTargetFriendly = this.isFriendlyEntity(targetEntity);
+
+    // 攻撃者が敵の場合は味方を、攻撃者が味方の場合は敵を攻撃
+    if (isAttackerEnemy && !isTargetFriendly) return false;
+    if (!isAttackerEnemy && !isTargetEnemy) return false;
+
+    setEntityTarget(targetComponent, targetEntityId);
+    return true;
+  }
+
+  /**
+   * 目標をクリア（手動制御用）
+   * @param attackerEntityId 攻撃者エンティティID
+   * @returns クリアに成功した場合true
+   */
+  public forceClearTarget(attackerEntityId: string): boolean {
+    const attackerEntity = this.entityManager.getEntity(attackerEntityId);
+    if (!attackerEntity) {
+      return false;
+    }
+
+    const targetComponent = attackerEntity.components.get(
+      "target",
+    ) as TargetComponent;
+    if (!targetComponent) {
+      return false;
+    }
+
+    clearTarget(targetComponent);
+    return true;
+  }
+
+  /**
+   * 指定された位置から指定された範囲内のエンティティを検索
+   * @param center 中心座標
+   * @param range 検索範囲
+   * @param filter フィルター関数（オプション）
+   * @returns 範囲内のエンティティ配列
+   */
+  public findEntitiesInRange(
+    center: Point,
+    range: number,
+    filter?: (entity: Entity) => boolean,
+  ): Entity[] {
+    const entitiesInRange: Entity[] = [];
+    const allEntities = this.entityManager.getAllEntities();
+
+    for (const entity of allEntities) {
+      const positionComponent = entity.components.get(
+        "position",
+      ) as PositionComponent;
+      if (!positionComponent) continue;
+
+      const distance = calculateDistance(center, positionComponent.point);
+      if (distance <= range) {
+        if (!filter || filter(entity)) {
+          entitiesInRange.push(entity);
+        }
+      }
+    }
+
+    return entitiesInRange;
+  }
+
+  /**
+   * デバッグ用：攻撃者とその目標の情報を取得
+   */
+  public getTargetingDebugInfo(): Array<{
+    attackerId: string;
+    targetId?: string;
+    enemiesInRange: number;
+    isValidTarget: boolean;
+  }> {
+    const attackers = this.entityManager.queryEntities({
+      required: ["position", "attack", "target"],
+    });
+
+    return attackers.map((attacker) => {
+      const targetComponent = attacker.components.get(
+        "target",
+      ) as TargetComponent;
+      const enemiesInRange = this.findEnemiesInRange(attacker);
+
+      let isValidTarget = false;
+      if (targetComponent.targetEntityId) {
+        const target = this.entityManager.getEntity(
+          targetComponent.targetEntityId,
+        );
+        isValidTarget = target ? this.isValidTarget(target) : false;
+      }
+
+      return {
+        attackerId: attacker.id,
+        targetId: targetComponent.targetEntityId,
+        enemiesInRange: enemiesInRange.length,
+        isValidTarget,
+      };
+    });
+  }
+}

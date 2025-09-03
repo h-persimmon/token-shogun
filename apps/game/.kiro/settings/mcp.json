@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "lsmcp": {
+      "command": "npx",
+      "args": ["-y", "@mizchi/lsmcp", "-p", "tsgo"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": ["index_onboarding", "list_dir", "search_symbols"]
+    },
+    "serena": {
+      "args": [],
+      "disabled": true,
+      "autoApprove": []
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "kiro-rts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "format": "biome format --write",
+    "test": "vitest --no-watch"
+  },
+  "dependencies": {
+    "next": "15.5.0",
+    "phaser": "^3.90.0",
+    "phaser-navmesh": "^2.3.1",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-papaparse": "^4.4.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.0",
+    "@mizchi/lsmcp": "^0.10.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@typescript/native-preview": "^7.0.0-dev.20250823.8",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^2.0.0"
+  }
+}

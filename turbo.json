@@ -1,21 +1,16 @@
 {
-  "$schema": "https://turborepo.com/schema.json",
-  "ui": "tui",
   "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"]
-    },
-    "lint": {
-      "dependsOn": ["^lint"]
-    },
-    "check-types": {
-      "dependsOn": ["^check-types"]
+    "copy-assets": {
+      "inputs": ["./apps/game/public/**"],
+      "outputs": ["./apps/platform/public/**"]
     },
     "dev": {
-      "cache": false,
+      "dependsOn": ["copy-assets"],
       "persistent": true
+    },
+    "build": {
+      "dependsOn": ["copy-assets"],
+      "outputs": ["dist/**", ".next/**"]
     }
   }
 }

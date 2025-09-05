@@ -1,5 +1,5 @@
 {
-  "name": "apps",
+  "name": "kiro-rts",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -16,9 +16,8 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "npm@10.9.2",
   "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+    "apps/*"
+  ],
+  "packageManager": "pnpm@8.10.0"
 }

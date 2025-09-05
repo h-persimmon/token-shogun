@@ -45,7 +45,7 @@ export class CSVWaveConfigLoader {
   private cachedConfigs: EnemyWaveConfig[] | null;
   private lastModified: number;
 
-  constructor(csvFilePath: string = '/config/enemy-waves.csv');
+  constructor(csvFilePath: string = '/game-assets/config/enemy-waves.csv');
   
   public async loadWaveConfigs(): Promise<EnemyWaveConfig[]>;
   public async reloadIfChanged(): Promise<EnemyWaveConfig[] | null>;

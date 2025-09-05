@@ -13,6 +13,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+<<<<<<< HEAD
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "plugins": [
@@ -20,10 +21,13 @@
         "name": "next"
       }
     ],
+=======
+  // plugins: [],
+>>>>>>> c615c1f (integrate game and UI by monorepo)
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
 }

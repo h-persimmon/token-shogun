@@ -1065,20 +1065,20 @@ export class GameScene extends Scene {
 
   preload() {
     // ユニット用のアセットをロード（4行6列のスプライトシート）
-    this.load.spritesheet("soldier", "/slime.png", {
+    this.load.spritesheet("soldier", "/game-assets/slime.png", {
       frameWidth: 20, // 各フレームの幅
       frameHeight: 28, // 各フレームの高さ
       // 4行6列（24フレーム）のスプライトシート
     });
-    this.load.spritesheet("enemy", "/slime6.png", {
+    this.load.spritesheet("enemy", "/game-assets/slime6.png", {
       frameWidth: 20, // 各フレームの幅
       frameHeight: 28, // 各フレームの高さ
       // 4行6列（24フレーム）のスプライトシート
     });
     // サイズ小さくして読み取り
-    this.load.image("cannon", "/cannon.png");
-    this.load.tilemapTiledJSON("map", "/tilemaps/map_01.json");
-    this.load.image("tiles", "/tilemaps/tiles.png");
+    this.load.image("cannon", "/game-assets/cannon.png");
+    this.load.tilemapTiledJSON("map", "/game-assets/tilemaps/map_01.json");
+    this.load.image("tiles", "/game-assets/tilemaps/tiles.png");
   }
 
   create() {

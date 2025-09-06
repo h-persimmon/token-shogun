@@ -1,4 +1,4 @@
-import { Position } from "../../../src/game-logic/position/position";
+import { Position } from "../position/position";
 import { Difficulty } from "./difficulty";
 
 /**

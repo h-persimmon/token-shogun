@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { GamesPostRequestBody } from "../../src/api-interface/games/post-request-body";
-import type { GamesPostResponseBody } from "../../src/api-interface/games/post-response-body";
+import type { GamesPostRequestBody } from "../../../api-interface/games/post-request-body";
+import type { GamesPostResponseBody } from "../../../api-interface/games/post-response-body";
 import { STAGE_LIST } from "@/game-logic/stage/list";
 import { Stage } from "@/game-logic/stage/interface";
 

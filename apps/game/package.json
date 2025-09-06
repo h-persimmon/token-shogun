@@ -12,6 +12,7 @@
     "test": "vitest --no-watch"
   },
   "dependencies": {
+    "papaparse": "^5.5.3",
     "phaser": "^3.90.0",
     "phaser-navmesh": "^2.3.1",
     "react": "19.1.0",

@@ -20,6 +20,9 @@ importers:
 
   apps/game:
     dependencies:
+      papaparse:
+        specifier: ^5.5.3
+        version: 5.5.3
       phaser:
         specifier: ^3.90.0
         version: 3.90.0

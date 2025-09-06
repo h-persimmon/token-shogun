@@ -25,7 +25,8 @@
   // plugins: [],
 >>>>>>> c615c1f (integrate game and UI by monorepo)
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@kiro-rts/characters": ["../../packages/characters/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

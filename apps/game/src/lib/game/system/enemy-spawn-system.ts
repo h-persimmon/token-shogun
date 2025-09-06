@@ -12,10 +12,9 @@ import {
 } from "../components/position-component";
 import { createTargetComponent } from "../components/target-component";
 import { CSVWaveConfigLoader } from "../csv/csv-wave-config-loader";
+import { enemyUnitConfigToEntity } from "../entities/enemyUnitConfigToEntity";
 import type { Entity } from "../entities/entity";
-import type { createEntityManager } from "../entities/entity-manager";
-
-type EntityManager = ReturnType<typeof createEntityManager>;
+import type { createEntityManager, EntityManager } from "../entities/entity-manager";
 
 /**
  * 敵生成設定
@@ -239,7 +238,6 @@ export class EnemySpawnSystem {
   public spawnEnemy(
     enemyType: EnemyType,
     currentTime: number = Date.now(),
-    structureTargetPriority?: string,
   ): Entity | null {
     const spawnPoint = this.getNextSpawnPoint();
     if (!spawnPoint) {
@@ -247,27 +245,7 @@ export class EnemySpawnSystem {
       return null;
     }
 
-    // EntityManagerを使用してエンティティを作成
-    const entity = this.entityManager.createEntity(
-      "enemy",
-      spawnPoint.x,
-      spawnPoint.y,
-      2,
-    );
-
-    // 敵の設定を取得
-    const enemyConfig = getEnemyConfig(enemyType);
-
-    // コンポーネントを設定
-    this.setupEnemyComponents(
-      entity,
-      enemyType,
-      spawnPoint,
-      enemyConfig,
-      currentTime,
-      structureTargetPriority,
-    );
-
+    const entity = enemyUnitConfigToEntity(enemyType, this.entityManager, spawnPoint.x, spawnPoint.y);
     // 統計を更新
     this.totalEnemiesSpawned++;
 
@@ -738,59 +716,6 @@ export class EnemySpawnSystem {
     }
 
     return progress;
-  }
-
-  /**
-   * 敵エンティティのコンポーネントを設定する
-   * @param entity エンティティ
-   * @param enemyType 敵の種類
-   * @param spawnPoint スポーン地点
-   * @param enemyConfig 敵の設定
-   * @param currentTime 現在時刻
-   * @param structureTargetPriority 構造物ターゲット優先度（オプション）
-   */
-  private setupEnemyComponents(
-    entity: Entity,
-    enemyType: EnemyType,
-    spawnPoint: Point,
-    enemyConfig: ReturnType<typeof getEnemyConfig>,
-    currentTime: number,
-    structureTargetPriority?: string,
-  ): void {
-    // EntityManagerで作成されたエンティティにはすでにspriteが設定されているので、
-    // 位置とティント（色）のみ設定
-    if (entity.sprite) {
-      entity.sprite.setPosition(spawnPoint.x, spawnPoint.y);
-      entity.sprite.setTint(0xff0000); // 赤色（敵）
-      entity.sprite.setVisible(true);
-    }
-
-    // ENEMY_CONFIGを参照してパラメータでコンポーネントを追加
-    this.entityManager.addComponent(
-      entity.id,
-      createPositionComponent(spawnPoint.x, spawnPoint.y),
-    );
-    this.entityManager.addComponent(
-      entity.id,
-      createHealthComponent(enemyConfig.health),
-    );
-    this.entityManager.addComponent(
-      entity.id,
-      createAttackComponent(enemyConfig.damage, 50, 2.0),
-    );
-    this.entityManager.addComponent(
-      entity.id,
-      createEnemyComponent(
-        enemyType,
-        currentTime,
-        structureTargetPriority as any,
-      ),
-    );
-    this.entityManager.addComponent(
-      entity.id,
-      createMovementComponent(enemyConfig.speed),
-    );
-    this.entityManager.addComponent(entity.id, createTargetComponent());
   }
 
   /**

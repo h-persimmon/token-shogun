@@ -30,6 +30,7 @@ type EntityManagerState = {
   scene: Phaser.Scene;
 };
 
+export type EntityManager = ReturnType<typeof createEntityManager>;
 // Entity Manager の作成
 export const createEntityManager = (
   scene: Phaser.Scene,

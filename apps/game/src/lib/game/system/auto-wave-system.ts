@@ -1,6 +1,8 @@
+import { Scene } from "phaser";
 import type { createEntityManager } from "../entities/entity-manager";
 import type { EnemySpawnSystem } from "./enemy-spawn-system";
 import type { GameStateSystem } from "./game-state-system";
+import { enemyUnitConfigs } from "@kiro-rts/characters";
 
 type EntityManager = ReturnType<typeof createEntityManager>;
 

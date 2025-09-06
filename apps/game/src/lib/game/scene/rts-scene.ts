@@ -24,6 +24,7 @@ import { HealthBarSystem } from "../system/health-bar-system";
 import { InteractionSystem } from "../system/interaction-system";
 import { MovementSystem } from "../system/movement-system";
 import { TargetingSystem } from "../system/targeting-system";
+import { enemyUnitConfigs } from "@kiro-rts/characters";
 
 export class GameScene extends Scene {
   private entityManager?: ReturnType<typeof createEntityManager>;
@@ -1064,6 +1065,24 @@ export class GameScene extends Scene {
   }
 
   preload() {
+
+    const enemyCharachips = enemyUnitConfigs.map((c) => c.charachip).filter(Boolean);
+    console.log(enemyCharachips)
+    for (const configs of enemyUnitConfigs) {
+      const charachip = configs.charachip;
+      const config = configs.charachipConfig || {
+        frameWidth: 32,
+        frameHeight: 32,
+      };
+      if (!this.textures.exists(charachip)) {
+        console.log(`AutoWaveSystem: Preloading charachip ${charachip}`);
+        this.load.spritesheet(charachip, `/charachips/${charachip}`, {
+          frameWidth: config.frameWidth,
+          frameHeight: config.frameHeight,
+        });
+      }
+    }
+  
     // ユニット用のアセットをロード（4行6列のスプライトシート）
     this.load.spritesheet("soldier", "/game-assets/slime.png", {
       frameWidth: 20, // 各フレームの幅

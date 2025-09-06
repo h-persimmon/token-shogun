@@ -192,19 +192,6 @@ export class CSVValidator {
   ): ValidationResult<EnemyType> {
     const trimmedValue = value.trim().toLowerCase();
 
-    if (!CSV_SCHEMA.validEnemyTypes.includes(trimmedValue as any)) {
-      return {
-        value: null,
-        error: {
-          type: "INVALID_ENEMY_TYPE",
-          message: `Row ${rowIndex}: Invalid enemy type '${value}'. Valid types: ${CSV_SCHEMA.validEnemyTypes.join(", ")}`,
-          rowIndex,
-          fieldName: "enemyType",
-          value,
-        },
-      };
-    }
-
     return { value: trimmedValue as EnemyType, error: null };
   }
 

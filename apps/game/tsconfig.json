@@ -15,7 +15,8 @@
     "incremental": true,
   // plugins: [],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@kiro-rts/characters": ["../../packages/characters/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

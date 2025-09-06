@@ -424,12 +424,6 @@ export class AttackSystem {
         targetStructure,
         modifiedDamage,
       );
-    } else if (targetEnemy) {
-      // 敵に対するダメージ修正
-      modifiedDamage = this.applyTargetEnemyDamageModifier(
-        targetEnemy,
-        modifiedDamage,
-      );
     }
 
     // ダメージの最小値は1
@@ -494,29 +488,6 @@ export class AttackSystem {
   ): number {
     // 構造物は一般的にダメージ軽減
     return baseDamage * 0.8;
-  }
-
-  /**
-   * 敵に対するダメージ修正
-   * @param enemyComponent 敵コンポーネント
-   * @param baseDamage 基本ダメージ
-   * @returns 修正後のダメージ
-   */
-  private applyTargetEnemyDamageModifier(
-    enemyComponent: EnemyComponent,
-    baseDamage: number,
-  ): number {
-    // 敵タイプによる防御修正
-    switch (enemyComponent.enemyType) {
-      case "basic":
-        return baseDamage * 1.0; // 標準防御
-      case "fast":
-        return baseDamage * 1.1; // 軽装甲で脆い
-      case "heavy":
-        return baseDamage * 0.7; // 重装甲で頑丈
-      default:
-        return baseDamage;
-    }
   }
 
   /**

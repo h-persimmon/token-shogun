@@ -1,0 +1,17 @@
+{
+  "name": "@kiro-rts/vibe-strategy",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest ."
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.24.0",
+    "fast-xml-parser": "^5.2.5",
+    "zod": "^4.1.5"
+  }
+}

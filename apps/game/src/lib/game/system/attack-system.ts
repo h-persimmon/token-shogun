@@ -26,7 +26,6 @@ import {
 } from "../components/target-component";
 import type { UnitComponent } from "../components/unit-component";
 import type { Entity } from "../entities/entity";
-import type { createEntityManager } from "../entities/entity-manager";
 import type { EntityManager } from "../entities/entity-manager";
 
 /**

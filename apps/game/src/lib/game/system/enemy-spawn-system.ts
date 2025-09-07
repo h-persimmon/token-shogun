@@ -1,20 +1,9 @@
-import { createAttackComponent } from "../components/attack-component";
-import {
-  createEnemyComponent,
-  type EnemyType,
-  getEnemyConfig,
-} from "../components/enemy-component";
-import { createHealthComponent } from "../components/health-component";
-import { createMovementComponent } from "../components/movement-component";
-import {
-  createPositionComponent,
-  type Point,
-} from "../components/position-component";
-import { createTargetComponent } from "../components/target-component";
+import { type EnemyType } from "../components/enemy-component";
+import { type Point } from "../components/position-component";
 import { CSVWaveConfigLoader } from "../csv/csv-wave-config-loader";
 import { enemyUnitConfigToEntity } from "../entities/enemyUnitConfigToEntity";
 import type { Entity } from "../entities/entity";
-import type { createEntityManager, EntityManager } from "../entities/entity-manager";
+import type { EntityManager } from "../entities/entity-manager";
 
 /**
  * 敵生成設定
@@ -150,8 +139,7 @@ export class EnemySpawnSystem {
       if (enemyTypeState.spawnedCount < enemyConfig.count) {
         const spawnedEnemy = this.spawnEnemy(
           enemyConfig.type,
-          currentTime,
-          enemyConfig.structureTargetPriority,
+          currentTime
         );
         if (spawnedEnemy) {
           enemyTypeState.spawnedCount++;

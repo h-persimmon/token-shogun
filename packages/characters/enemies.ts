@@ -10,7 +10,6 @@ export const enemyUnitConfigs: EnemyUnitConfig[] = [
       frameHeight: 28,
       displayWidth: 32
     },
-    unitType: "basic",
     maxHealth: 20,
     speed: 48,
     attackDamage: 5,
@@ -25,20 +24,25 @@ export const enemyUnitConfigs: EnemyUnitConfig[] = [
       frameHeight: 28,
       displayWidth: 32
     },
-    unitType: "fast",
     maxHealth: 15,
     speed: 32,
     attackDamage: 10,
     attackRange: 64,
+    structureTargetPriority: "gate"
   },
     // 赤鬼
   {
     id: "enemy_red_oni",
     charachip: "red_oni.png",
-    unitType: "heavy",
-    maxHealth: 50,
-    speed: 30,
+      charachipConfig: {
+      frameWidth: 20,
+      frameHeight: 28,
+      displayWidth: 52
+    },
+    maxHealth: 200,
+    speed: 50,
     attackDamage: 20,
-    attackRange: 1,
+    attackRange: 20,
+    "structureTargetPriority": "any"
   } 
 ]

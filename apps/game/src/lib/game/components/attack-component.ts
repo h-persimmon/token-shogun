@@ -105,8 +105,9 @@ export const isInAttackRange = (
   attackerPos: PositionComponent,
   targetPos: PositionComponent,
   attackRange: number,
-): boolean =>
-  calculateDistance(attackerPos.point, targetPos.point) <= attackRange;
+): boolean => {
+  return calculateDistance(attackerPos.point, targetPos.point) <= attackRange;
+};
 
 // 攻撃タイプ判定のユーティリティ関数
 

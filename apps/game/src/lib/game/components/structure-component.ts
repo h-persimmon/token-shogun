@@ -106,7 +106,7 @@ export const isGateStructure = (structure: StructureComponent): boolean => {
 
 export const isDefenseStructure = (structure: StructureComponent): boolean => {
   return (
-    structure.structureType === "cannon" || structure.structureType === "tower"
+    structure.attackableType === "auto" || structure.attackableType === "with-unit"
   );
 };
 

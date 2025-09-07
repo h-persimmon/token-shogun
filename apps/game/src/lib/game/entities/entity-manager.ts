@@ -5,10 +5,12 @@ import { createEntity, deleteEntity, type Entity } from "./entity";
 import { createObjectPool, type Poolable } from "./object-pool";
 
 // Entity管理のための型定義
-export type EntityQuery = {
-  required?: (keyof ComponentMap)[];
-  optional?: (keyof ComponentMap)[];
-  excluded?: (keyof ComponentMap)[];
+export type EntityQuery<
+  R extends keyof ComponentMap = never,
+  E extends keyof ComponentMap = never
+> = {
+  required?: R[];
+  excluded?: E[];
 };
 
 export type EntityGroup = {
@@ -44,7 +46,7 @@ export const createEntityManager = (
         entity: null,
         reset() {
           if (this.entity) {
-            this.entity.components.clear();
+            this.entity.components = {};
             this.entity = null;
           }
         },
@@ -97,14 +99,14 @@ export const createEntityManager = (
   };
 
   // Component追加時のGroup更新
-  const addComponentToEntity = (
+  const addComponentToEntity = <T extends Component>(
     entityId: string,
-    component: Component,
+    component: T
   ): boolean => {
     const entity = state.entities.get(entityId);
     if (!entity) return false;
 
-    entity.components.set(component.type, component);
+    entity.components = { ...entity.components, [component.type]: component };
     updateEntityGroups(entity);
 
     return true;
@@ -118,7 +120,7 @@ export const createEntityManager = (
     const entity = state.entities.get(entityId);
     if (!entity) return false;
 
-    entity.components.delete(componentType as string);
+    delete entity.components[componentType];
     updateEntityGroups(entity);
 
     return true;
@@ -151,12 +153,15 @@ export const createEntityManager = (
   };
 
   // クエリに基づくEntity検索
-  const queryEntities = (query: EntityQuery): Entity[] => {
-    const results: Entity[] = [];
+  const queryEntities = <
+    R extends keyof ComponentMap = never,
+    E extends keyof ComponentMap = never
+  >(query: EntityQuery<R, E>): Entity<Exclude<R, E>[]>[] => {
+    const results: Entity<Exclude<R, E>[]>[] = [];
 
     for (const entity of state.entities.values()) {
       if (matchesQuery(entity, query)) {
-        results.push(entity);
+        results.push(entity as unknown as Entity<Exclude<R, E>[]>);
       }
     }
 
@@ -183,7 +188,7 @@ export const createEntityManager = (
     const componentCounts = new Map<string, number>();
 
     for (const entity of state.entities.values()) {
-      for (const componentType of entity.components.keys()) {
+      for (const componentType of Object.keys(entity.components)) {
         componentCounts.set(
           componentType,
           (componentCounts.get(componentType) || 0) + 1,
@@ -211,11 +216,14 @@ export const createEntityManager = (
   };
 
   // ヘルパー関数: クエリマッチング
-  const matchesQuery = (entity: Entity, query: EntityQuery): boolean => {
+  const matchesQuery = <
+    R extends (keyof ComponentMap),
+    E extends (keyof ComponentMap)
+  >(entity: Entity, query: EntityQuery<R, E>): boolean => {
     // 必須コンポーネントチェック
     if (query.required) {
       for (const componentType of query.required) {
-        if (!entity.components.has(componentType as string)) {
+        if (!(componentType in entity.components)) {
           return false;
         }
       }
@@ -224,7 +232,7 @@ export const createEntityManager = (
     // 除外コンポーネントチェック
     if (query.excluded) {
       for (const componentType of query.excluded) {
-        if (entity.components.has(componentType as string)) {
+        if (componentType in entity.components) {
           return false;
         }
       }
@@ -286,28 +294,28 @@ export const createEntityManager = (
   };
 };
 
-// 使用例のためのヘルパー関数
-export const createCommonEntityGroups = (
-  entityManager: ReturnType<typeof createEntityManager>,
-) => {
-  // 移動可能なEntity群
-  entityManager.createEntityGroup("movable", {
-    required: ["position"],
-  });
+// // 使用例のためのヘルパー関数
+// export const createCommonEntityGroups = (
+//   entityManager: ReturnType<typeof createEntityManager>,
+// ) => {
+//   // 移動可能なEntity群
+//   entityManager.createEntityGroup("movable", {
+//     required: ["position"],
+//   });
 
-  // 戦闘可能なEntity群
-  entityManager.createEntityGroup("combatants", {
-    required: ["position", "health", "attack"],
-  });
+//   // 戦闘可能なEntity群
+//   entityManager.createEntityGroup("combatants", {
+//     required: ["position", "health", "attack"],
+//   });
 
-  // 構造物Entity群
-  entityManager.createEntityGroup("structures", {
-    required: ["position", "structure"],
-  });
+//   // 構造物Entity群
+//   entityManager.createEntityGroup("structures", {
+//     required: ["position", "structure"],
+//   });
 
-  // 敵Entity群（攻撃可能だが構造物ではない）
-  entityManager.createEntityGroup("enemies", {
-    required: ["position", "health", "attack"],
-    excluded: ["structure"],
-  });
-};
+//   // 敵Entity群（攻撃可能だが構造物ではない）
+//   entityManager.createEntityGroup("enemies", {
+//     required: ["position", "health", "attack"],
+//     excluded: ["structure"],
+//   });
+// };

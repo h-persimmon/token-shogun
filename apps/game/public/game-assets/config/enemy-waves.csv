@@ -1,6 +1,6 @@
 waveNumber,enemyType,count,spawnInterval,spawnDelay,spawnX,spawnY,structureTargetPriority
-1,enemy_mouseman,5,2000,0,3,8,gate
-1,enemy_mouseman,3,2000,0,3,9,gate
+1,enemy_red_oni,5,2000,0,3,8,gate
+1,enemy_onibi_red,3,2000,0,3,9,gate
 2,enemy_onibi_red,8,1500,0,3,8,gate
 2,enemy_onibi_red,3,3000,5000,3,9,gate
 3,enemy_red_oni,10,1000,0,3,8,gate

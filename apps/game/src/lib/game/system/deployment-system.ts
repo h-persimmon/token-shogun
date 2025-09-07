@@ -32,60 +32,6 @@ export class DeploymentSystem {
   constructor(private entityManager: ReturnType<typeof createEntityManager>) {}
 
   /**
-   * 砲台にユニットを配備する
-   */
-  deployUnitToStructure(structureId: string, unitId: string): DeploymentResult {
-    const structureEntity = this.entityManager.getEntity(structureId);
-    const unitEntity = this.entityManager.getEntity(unitId);
-
-    if (!structureEntity) {
-      return { success: false, message: "Structure not found" };
-    }
-
-    if (!unitEntity) {
-      return { success: false, message: "Unit not found" };
-    }
-
-    const structureComponent = structureEntity.components.get(
-      "structure",
-    ) as StructureComponent;
-    const unitComponent = unitEntity.components.get("unit") as UnitComponent;
-
-    if (!structureComponent) {
-      return { success: false, message: "Structure component not found" };
-    }
-
-    if (!unitComponent) {
-      return { success: false, message: "Unit component not found" };
-    }
-
-    // 配備可能性をチェック
-    const deploymentCheck = this.canDeployUnit(structureId, unitId);
-    if (!deploymentCheck.canDeploy) {
-      return {
-        success: false,
-        message: deploymentCheck.reason || "Cannot deploy unit",
-      };
-    }
-
-    // 配備実行
-    const structureDeploySuccess = deployUnitToStructure(
-      structureComponent,
-      unitId,
-    );
-    if (!structureDeploySuccess) {
-      return { success: false, message: "Failed to deploy unit to structure" };
-    }
-
-    deployUnit(unitComponent, structureId);
-
-    // ユニットの位置を砲台の位置に移動
-    this.moveUnitToStructure(unitId, structureId);
-
-    return { success: true, message: "Unit deployed successfully" };
-  }
-
-  /**
    * 砲台からユニットを撤退させる
    */
   undeployUnitFromStructure(structureId: string): DeploymentResult {
@@ -95,9 +41,7 @@ export class DeploymentSystem {
       return { success: false, message: "Structure not found" };
     }
 
-    const structureComponent = structureEntity.components.get(
-      "structure",
-    ) as StructureComponent;
+    const structureComponent = structureEntity.components.structure
     if (!structureComponent) {
       return { success: false, message: "Structure component not found" };
     }
@@ -112,7 +56,7 @@ export class DeploymentSystem {
       return { success: false, message: "Deployed unit not found" };
     }
 
-    const unitComponent = unitEntity.components.get("unit") as UnitComponent;
+    const unitComponent = unitEntity.components.unit as UnitComponent;
     if (!unitComponent) {
       return { success: false, message: "Unit component not found" };
     }
@@ -149,10 +93,8 @@ export class DeploymentSystem {
       };
     }
 
-    const structureComponent = structureEntity.components.get(
-      "structure",
-    ) as StructureComponent;
-    const unitComponent = unitEntity.components.get("unit") as UnitComponent;
+    const structureComponent = structureEntity.components.structure
+    const unitComponent = unitEntity.components.unit
 
     if (!structureComponent) {
       return {
@@ -219,7 +161,7 @@ export class DeploymentSystem {
     const availableUnits: string[] = [];
 
     for (const entity of this.entityManager.getAllEntities()) {
-      const unitComponent = entity.components.get("unit") as UnitComponent;
+      const unitComponent = entity.components.unit
       if (unitComponent && !isUnitDeployed(unitComponent)) {
         availableUnits.push(entity.id);
       }
@@ -235,9 +177,7 @@ export class DeploymentSystem {
     const deployableStructures: string[] = [];
 
     for (const entity of this.entityManager.getAllEntities()) {
-      const structureComponent = entity.components.get(
-        "structure",
-      ) as StructureComponent;
+      const structureComponent = entity.components.structure
       if (structureComponent && canDeployUnit(structureComponent)) {
         deployableStructures.push(entity.id);
       }
@@ -260,9 +200,7 @@ export class DeploymentSystem {
       return { hasUnit: false, canDeploy: false };
     }
 
-    const structureComponent = structureEntity.components.get(
-      "structure",
-    ) as StructureComponent;
+    const structureComponent = structureEntity.components.structure
     if (!structureComponent) {
       return { hasUnit: false, canDeploy: false };
     }
@@ -289,12 +227,8 @@ export class DeploymentSystem {
       return;
     }
 
-    const unitPosition = unitEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const structurePosition = structureEntity.components.get(
-      "position",
-    ) as PositionComponent;
+    const unitPosition = unitEntity.components.position
+    const structurePosition = structureEntity.components.position
 
     if (unitPosition && structurePosition) {
       unitPosition.point.x = structurePosition.point.x;
@@ -317,9 +251,7 @@ export class DeploymentSystem {
     }> = [];
 
     for (const entity of this.entityManager.getAllEntities()) {
-      const structureComponent = entity.components.get(
-        "structure",
-      ) as StructureComponent;
+      const structureComponent = entity.components.structure
       if (structureComponent) {
         const status = this.getStructureDeploymentStatus(entity.id);
         deploymentInfo.push({

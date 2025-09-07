@@ -56,28 +56,20 @@ export class AutoDeploymentSystem {
    * @param unitEntity ユニットエンティティ
    * @param structures 配備可能な砲台リスト
    */
-  private checkAutoDeployment(unitEntity: Entity): void {
-    const unitComponent = unitEntity.components.get("unit") as UnitComponent;
-    if (!unitComponent) return;
-
-    const movementComponent = unitEntity.components.get(
-      "movement",
-    ) as MovementComponent;
+  private checkAutoDeployment(unitEntity: Entity<["unit" | "movement"]>): void {
+    const unitComponent = unitEntity.components.unit
+    const movementComponent = unitEntity.components.movement
     const targetId = movementComponent?.targetEntityId;
     if (!targetId) return;
 
     const structureOrSomething = this.entityManager.getEntity(targetId);
-    const structureComponent = structureOrSomething?.components.get(
-      "structure",
-    ) as StructureComponent;
+    const structureComponent = structureOrSomething?.components.structure;
     if (!structureComponent) return;
 
-    const unitPosition = unitEntity.components.get(
-      "position",
-    ) as PositionComponent;
+    const unitPosition = unitEntity.components.position;
     const structurePosition =
       structureOrSomething &&
-      (structureOrSomething.components.get("position") as PositionComponent);
+      (structureOrSomething.components.position as PositionComponent);
 
     if (!unitPosition || !structurePosition || isUnitDeployed(unitComponent)) {
       return;
@@ -97,11 +89,9 @@ export class AutoDeploymentSystem {
    * @param unitEntity ユニットエンティティ
    * @param structureEntity 砲台エンティティ
    */
-  private executeAutoDeployment(unitEntity: any, structureEntity: any): void {
-    const structureComponent = structureEntity.components.get(
-      "structure",
-    ) as StructureComponent;
-    const unitComponent = unitEntity.components.get("unit") as UnitComponent;
+  private executeAutoDeployment(unitEntity: Entity, structureEntity: Entity): void {
+    const structureComponent = structureEntity.components.structure as StructureComponent;
+    const unitComponent = unitEntity.components.unit as UnitComponent;
 
     if (!structureComponent || !unitComponent) {
       this.callbacks?.onAutoDeploymentFailed?.(
@@ -146,11 +136,9 @@ export class AutoDeploymentSystem {
    * @param unitEntity ユニットエンティティ
    * @param structureEntity 砲台エンティティ
    */
-  private moveUnitToStructure(unitEntity: any, structureEntity: any): void {
-    const unitPos = unitEntity.components.get("position") as PositionComponent;
-    const structurePos = structureEntity.components.get(
-      "position",
-    ) as PositionComponent;
+  private moveUnitToStructure(unitEntity: Entity, structureEntity: Entity): void {
+    const unitPos = unitEntity.components.position as PositionComponent;
+    const structurePos = structureEntity.components.position as PositionComponent;
 
     if (unitPos && structurePos) {
       unitPos.point.x = structurePos.point.x;
@@ -166,7 +154,7 @@ export class AutoDeploymentSystem {
     const availableUnits: any[] = [];
 
     for (const entity of this.entityManager.getAllEntities()) {
-      const unitComponent = entity.components.get("unit") as UnitComponent;
+      const unitComponent = entity.components.unit as UnitComponent;
       if (unitComponent && !isUnitDeployed(unitComponent)) {
         availableUnits.push(entity);
       }

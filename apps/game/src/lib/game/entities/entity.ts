@@ -1,8 +1,8 @@
 import type { Component, ComponentMap } from "../components";
 
-export type Entity = {
+export type Entity<K extends (keyof ComponentMap)[] = []> = {
   id: string;
-  components: Map<string, Component>;
+  components: Partial<ComponentMap> & Pick<ComponentMap, K[number]>;
   sprite: Phaser.GameObjects.Sprite | null;
 };
 
@@ -11,37 +11,23 @@ export const createEntity = (
   sprite: Phaser.GameObjects.Sprite | null,
 ): Entity => ({
   id,
-  components: new Map<string, Component>(),
+  components: {},
   sprite,
 });
 
-export const addComponent = (entity: Entity, component: Component): void => {
-  entity.components.set(component.type, component);
+export const addComponent = <T extends Component>(entity: Entity, component: T): void => {
+  entity.components = { ...entity.components, [component.type]: component };
 };
 
 export const removeComponent = (
   entity: Entity,
-  componentType: string,
+  componentType: Component["type"],
 ): void => {
-  entity.components.delete(componentType);
-};
-
-export const getComponent = <T extends keyof ComponentMap>(
-  entity: Entity,
-  componentType: T,
-): ComponentMap[T] | undefined => {
-  return entity.components.get(componentType) as ComponentMap[T] | undefined;
-};
-
-export const hasComponent = (
-  entity: Entity,
-  componentType: keyof ComponentMap,
-): boolean => {
-  return entity.components.has(componentType as string);
+  delete entity.components[componentType];
 };
 
 export const deleteEntity = (entity: Entity): void => {
-  entity.components.clear();
+  entity.components = {};
   if (entity.sprite?.destroy) {
     entity.sprite.destroy();
   }

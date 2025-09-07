@@ -18,7 +18,6 @@ export type EnemyUnitConfig = {
 		frameHeight: number;
 		displayWidth: number;
 	}
-	unitType: 'basic' | 'fast' | 'heavy' | string;
 	maxHealth: number;
 	speed: number;
   battleEffectId?: string;

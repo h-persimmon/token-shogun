@@ -104,7 +104,6 @@ export class GameStateSystem {
     this.entityManager = entityManager;
     this.eventListeners = new Map();
     this.criticalStructureIds = new Set();
-    this.lastUpdateTime = Date.now();
     this.scene = scene;
 
     // 初期ゲーム状態を設定
@@ -154,8 +153,6 @@ export class GameStateSystem {
    * @param currentTime 現在時刻（ミリ秒）
    */
   public update(currentTime: number): void {
-    this.lastUpdateTime = currentTime;
-
     // ゲーム状態に応じた処理
     switch (this.gameState.phase) {
       case "preparation":
@@ -313,9 +310,7 @@ export class GameStateSystem {
     if (structureEntityId === this.gateEntityId) {
       const gateEntity = this.entityManager.getEntity(structureEntityId);
       if (gateEntity) {
-        const healthComponent = gateEntity.components.get(
-          "health",
-        ) as HealthComponent;
+        const healthComponent = gateEntity.components.health as HealthComponent;
         if (healthComponent) {
           this.gameState.gateHealth = Math.max(
             0,
@@ -343,9 +338,7 @@ export class GameStateSystem {
 
     const gateEntity = this.entityManager.getEntity(this.gateEntityId);
     if (gateEntity) {
-      const healthComponent = gateEntity.components.get(
-        "health",
-      ) as HealthComponent;
+      const healthComponent = gateEntity.components.health
       if (healthComponent) {
         this.gameState.gateHealth = Math.max(0, healthComponent.currentHealth);
       }
@@ -362,9 +355,7 @@ export class GameStateSystem {
     // 門の初期体力を設定
     const gateEntity = this.entityManager.getEntity(gateEntityId);
     if (gateEntity) {
-      const healthComponent = gateEntity.components.get(
-        "health",
-      ) as HealthComponent;
+      const healthComponent = gateEntity.components.health as HealthComponent;
       if (healthComponent) {
         this.gameState.gateHealth = healthComponent.currentHealth;
         this.gameState.maxGateHealth = healthComponent.maxHealth;
@@ -545,7 +536,7 @@ export class GameStateSystem {
     // 生きている敵の数をカウント
     let aliveEnemies = 0;
     for (const enemy of enemies) {
-      const healthComponent = enemy.components.get("health") as HealthComponent;
+      const healthComponent = enemy.components.health;
       if (healthComponent && healthComponent.currentHealth > 0) {
         aliveEnemies++;
       }
@@ -672,9 +663,7 @@ export class GameStateSystem {
         return true;
       }
 
-      const healthComponent = structure.components.get(
-        "health",
-      ) as HealthComponent;
+      const healthComponent = structure.components.health;
       if (healthComponent && healthComponent.currentHealth <= 0) {
         return true;
       }

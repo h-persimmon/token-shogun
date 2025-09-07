@@ -45,12 +45,8 @@ export class MovementSystem {
     const entity = this.entityManager.getEntity(entityId);
     if (!entity) return false;
 
-    const positionComponent = entity.components.get("position") as
-      | PositionComponent
-      | undefined;
-    const movementComponent = entity.components.get("movement") as
-      | MovementComponent
-      | undefined;
+    const positionComponent = entity.components.position
+    const movementComponent = entity.components.movement
 
     if (!positionComponent || !movementComponent) {
       console.warn(
@@ -90,9 +86,7 @@ export class MovementSystem {
     const entity = this.entityManager.getEntity(entityId);
     if (!entity) return;
 
-    const movementComponent = entity.components.get("movement") as
-      | MovementComponent
-      | undefined;
+    const movementComponent = entity.components.movement;
     if (movementComponent) {
       clearMovementTarget(movementComponent);
     }
@@ -108,9 +102,7 @@ export class MovementSystem {
     for (const entity of entities) {
       this.updateEntityMovement(entity, delta);
       // アニメーションフレームも更新
-      const movementComponent = entity.components.get("movement") as
-        | MovementComponent
-        | undefined;
+      const movementComponent = entity.components.movement;
       if (movementComponent) {
         updateAnimationFrame(movementComponent, delta);
       }
@@ -118,10 +110,10 @@ export class MovementSystem {
   }
 
   private updateEntityMovement(entity: Entity, delta: number): void {
-    const positionComponent = entity.components.get("position") as
+    const positionComponent = entity.components.position as
       | PositionComponent
       | undefined;
-    const movementComponent = entity.components.get("movement") as
+    const movementComponent = entity.components.movement as
       | MovementComponent
       | undefined;
 
@@ -145,9 +137,9 @@ export class MovementSystem {
     const dx = currentTarget.x - currentPos.x;
     const dy = currentTarget.y - currentPos.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-
     // 目標点に十分近い場合、次のパス点に進む
     if (distance < 5) {
+      console.log(`🔥Entity ${entity.id} reached target (${currentTarget.x}, ${currentTarget.y})`);
       // 5ピクセル以内なら到達とみなす
       advancePathIndex(movementComponent);
       return;
@@ -156,7 +148,7 @@ export class MovementSystem {
     // 移動量を計算（デルタ時間を考慮）
     const speed = movementComponent.speed;
     const moveDistance = (speed * delta) / 1000; // delta は ms なので秒に変換
-
+    console.log("🔥", moveDistance, distance);
     if (moveDistance >= distance) {
       // 今回の更新で目標点に到達する
       positionComponent.point.x = currentTarget.x;
@@ -183,7 +175,7 @@ export class MovementSystem {
    */
   public getMovingEntities(): Entity[] {
     return this.entityManager.getAllEntities().filter((entity: Entity) => {
-      const movementComponent = entity.components.get("movement") as
+      const movementComponent = entity.components.movement as
         | MovementComponent
         | undefined;
       return movementComponent?.isMoving || false;
@@ -209,7 +201,7 @@ export class MovementSystem {
   }
 
   public clearMoveTarget(entity: Entity): void {
-    const movementComponent = entity.components.get("movement") as
+    const movementComponent = entity.components.movement as
       | MovementComponent
       | undefined;
     if (movementComponent) {

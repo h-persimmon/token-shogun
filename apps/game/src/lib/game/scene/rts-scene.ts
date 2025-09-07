@@ -74,7 +74,7 @@ export class GameScene extends Scene {
   private updateSpriteDirection(entity: Entity): void {
     if (!entity.sprite) return;
 
-    const movementComponent = entity.components.get("movement") as
+    const movementComponent = entity.components["movement"] as
       | MovementComponent
       | undefined;
     if (!movementComponent) return;
@@ -109,7 +109,7 @@ export class GameScene extends Scene {
     );
 
     // TargetingSystemを初期化
-    this.targetingSystem = new TargetingSystem(this.entityManager);
+    this.targetingSystem = new TargetingSystem(this.entityManager, this.movementSystem);
 
     // AttackSystemを初期化
     this.attackSystem = new AttackSystem(this.entityManager);
@@ -226,7 +226,7 @@ export class GameScene extends Scene {
     // ゲートエンティティを検索してGameStateSystemに設定
     const allEntities = this.entityManager.getAllEntities();
     for (const entity of allEntities) {
-      const structureComponent = entity.components.get("structure");
+  const structureComponent = entity.components["structure"];
       if (
         structureComponent &&
         (structureComponent as any).structureType === "gate"
@@ -236,103 +236,54 @@ export class GameScene extends Scene {
         break;
       }
     }
-
-    // 敵エンティティに門への移動目標を設定
-    this.setupEnemyTargets();
   }
 
   /**
    * 敵の移動目標を設定
    */
-  private setupEnemyTargets(): void {
-    if (!this.entityManager) return;
+  // private setupEnemyTargets(): void {
+  //   console.log("🔥", "setupEnemyTargets")
+  //   if (!this.entityManager) return;
 
-    const allEntities = this.entityManager.getAllEntities();
-    let gateEntity = null;
+  //   const allEntities = this.entityManager.getAllEntities();
+  //   console.log("🔥", allEntities)
+  //   let gateEntity = null;
 
-    // ゲートエンティティを検索
-    for (const entity of allEntities) {
-      const structureComponent = entity.components.get("structure");
-      if (
-        structureComponent &&
-        (structureComponent as any).structureType === "gate"
-      ) {
-        gateEntity = entity;
-        break;
-      }
-    }
+  //   // ゲートエンティティを検索
+  //   for (const entity of allEntities) {
+  //     const structureComponent = entity.components["structure"];
+  //     if (
+  //       structureComponent &&
+  //       (structureComponent as any).structureType === "gate"
+  //     ) {
+  //       gateEntity = entity;
+  //       break;
+  //     }
+  //   }
 
-    if (!gateEntity) return;
+  //   if (!gateEntity) return;
 
-    // 敵エンティティに門への移動目標を設定
-    for (const entity of allEntities) {
-      const enemyComponent = entity.components.get("enemy");
-      const movementComponent = entity.components.get("movement");
-      if (enemyComponent && movementComponent && this.movementSystem) {
-        // 門の位置に向かって移動するように設定
-        const gatePos = gateEntity.components.get("position") as any;
-        if (gatePos) {
-          this.movementSystem.moveEntityTo(entity.id, {
-            x: gatePos.point.x,
-            y: gatePos.point.y,
-          });
-          console.log(
-            `Enemy ${entity.id} targeting gate at (${gatePos.point.x}, ${gatePos.point.y})`,
-          );
-        }
-      }
-    }
-  }
-
-  /**
-   * 敵の移動目標を継続的に更新
-   */
-  private updateEnemyMovement(): void {
-    if (!this.entityManager || !this.movementSystem) return;
-
-    const allEntities = this.entityManager.getAllEntities();
-    let gateEntity = null;
-
-    // ゲートエンティティを検索
-    for (const entity of allEntities) {
-      const structureComponent = entity.components.get("structure");
-      if (
-        structureComponent &&
-        (structureComponent as any).structureType === "gate"
-      ) {
-        gateEntity = entity;
-        break;
-      }
-    }
-
-    if (!gateEntity) return;
-
-    // 敵エンティティが門に向かって移動しているかチェック
-    for (const entity of allEntities) {
-      const enemyComponent = entity.components.get("enemy");
-      const movementComponent = entity.components.get("movement") as any;
-      if (enemyComponent && movementComponent) {
-        // 移動中でない敵に門への移動を指示
-        if (!movementComponent.isMoving) {
-          const gatePos = gateEntity.components.get("position") as any;
-          if (gatePos) {
-            this.movementSystem.moveEntityTo(entity.id, {
-              x: gatePos.point.x,
-              y: gatePos.point.y,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * ユニットの移動目標を更新（右クリック時のみ）
-   */
-  private updateUnitMovement(): void {
-    // 右クリック時のみ移動するため、この関数は空にする
-    // 実際の移動は setupMovementControls で処理
-  }
+  //   // 敵エンティティに門への移動目標を設定
+  //   for (const entity of allEntities) {
+  //     const enemyComponent = entity.components["enemy"];
+  //     const movementComponent = entity.components["movement"];
+  //     console.log("🔥", enemyComponent, movementComponent)
+  //     if (enemyComponent && movementComponent && this.movementSystem) {
+  //       // 門の位置に向かって移動するように設定
+  //       const gatePos = gateEntity.components.position;
+  //       console.log("🔥", gatePos);
+  //       if (gatePos) {
+  //         this.movementSystem.moveEntityTo(entity.id, {
+  //           x: gatePos.point.x,
+  //           y: gatePos.point.y,
+  //         });
+  //         console.log(
+  //           `Enemy ${entity.id} targeting gate at (${gatePos.point.x}, ${gatePos.point.y})`,
+  //         );
+  //       }
+  //     }
+  //   }
+  // }
 
   /**
    * パフォーマンス監視UIを初期化
@@ -1065,7 +1016,7 @@ export class GameScene extends Scene {
   }
 
   preload() {
-
+    // for debug
     const enemyCharachips = enemyUnitConfigs.map((c) => c.charachip).filter(Boolean);
     console.log(enemyCharachips)
     for (const configs of enemyUnitConfigs) {
@@ -1132,6 +1083,7 @@ export class GameScene extends Scene {
 
     // Entity Manager をセットアップ（example.tsのセットアップを利用）
     this.entityManager = setupEntityManager(this);
+    ((window as any).entityManager as any) = this.entityManager;
 
     // システムを初期化
     this.initializeSystems(navMesh);
@@ -1168,7 +1120,7 @@ export class GameScene extends Scene {
     const entities = this.entityManager.getAllEntities();
     entities.forEach((entity) => {
       // Spriteの座標をPositionComponentから取得（ピクセル座標として扱う）
-      const pos = entity.components.get("position") as
+      const pos = entity.components["position"] as
         | PositionComponent
         | undefined;
       if (pos && entity.sprite) {
@@ -1191,19 +1143,17 @@ export class GameScene extends Scene {
       if (entity.sprite) {
         entity.sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
           if (pointer.leftButtonDown()) {
-            if (entity?.components.get("unit")) {
+            if (entity?.components["unit"]) {
               selectedEntity = entity;
-            } else if (selectedEntity && entity.components.get("structure")) {
+            } else if (selectedEntity && entity.components["structure"]) {
               // Unitのターゲットを選択された構造物に設定
-              const structureComponent = entity.components.get("structure");
+              const structureComponent = entity.components["structure"];
               if (
                 (structureComponent as StructureComponent).attackableType ===
                 "with-unit"
               ) {
                 // selectedEntityのターゲットをentityに設定
-                const positionComponent = entity.components.get(
-                  "position",
-                ) as PositionComponent;
+                const positionComponent = entity.components["position"] as PositionComponent;
                 this.movementSystem?.moveEntityTo(
                   selectedEntity.id,
                   {
@@ -1288,10 +1238,6 @@ export class GameScene extends Scene {
     if (this.movementSystem) {
       measureSystemUpdate("Movement", () => {
         this.movementSystem?.update(delta);
-        // 敵の移動目標を継続的に更新
-        this.updateEnemyMovement();
-        // ユニットの移動目標を継続的に更新
-        this.updateUnitMovement();
       });
     }
 
@@ -1365,7 +1311,7 @@ export class GameScene extends Scene {
 
     const entities = this.entityManager.getAllEntities();
     entities.forEach((entity) => {
-      const pos = entity.components.get("position") as
+      const pos = entity.components["position"] as
         | PositionComponent
         | undefined;
       if (pos && entity.sprite) {
@@ -1386,8 +1332,8 @@ export class GameScene extends Scene {
 
     const entities = this.entityManager.getAllEntities();
     for (const entity of entities) {
-      const structureComponent = entity.components.get("structure") as any;
-      const healthComponent = entity.components.get("health") as any;
+  const structureComponent = entity.components["structure"] as any;
+  const healthComponent = entity.components["health"] as any;
 
       if (
         structureComponent &&

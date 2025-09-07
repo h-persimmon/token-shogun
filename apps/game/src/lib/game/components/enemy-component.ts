@@ -16,55 +16,23 @@ export type EnemyComponent = Component<
   }
 >;
 
-// 敵の種類別設定
-export const ENEMY_CONFIGS = {
-  basic: {
-    rewardValue: 10,
-    health: 100,
-    speed: 50,
-    damage: 1,
-    defaultStructureTargetPriority: "gate" as StructureTargetPriority,
-  },
-  fast: {
-    rewardValue: 15,
-    health: 60,
-    speed: 50,
-    damage: 15,
-    defaultStructureTargetPriority: "gate" as StructureTargetPriority,
-  },
-  heavy: {
-    rewardValue: 25,
-    health: 200,
-    speed: 50,
-    damage: 40,
-    defaultStructureTargetPriority: "defense" as StructureTargetPriority,
-  },
-} as const;
-
 export const createEnemyComponent = (
   enemyType: EnemyType,
   spawnTime: number = Date.now(),
-  structureTargetPriority?: StructureTargetPriority,
+  structureTargetPriority: StructureTargetPriority,
+  rewardValue: number,
 ): EnemyComponent => ({
   type: enemyComponentTag,
   enemyType,
   spawnTime,
-  rewardValue: ENEMY_CONFIGS[enemyType].rewardValue,
-  structureTargetPriority:
-    structureTargetPriority ||
-    ENEMY_CONFIGS[enemyType].defaultStructureTargetPriority,
+  rewardValue: rewardValue || 0,
+  structureTargetPriority: structureTargetPriority
 });
 
 export const isEnemyComponent = (
   component: Component<any, any>,
 ): component is EnemyComponent => {
   return component.type === enemyComponentTag;
-};
-
-// Component utility functions
-
-export const getEnemyConfig = (enemyType: EnemyType) => {
-  return ENEMY_CONFIGS[enemyType];
 };
 
 export const getEnemyAge = (
@@ -83,18 +51,6 @@ export const isEnemyType = (
 
 export const getEnemyReward = (enemy: EnemyComponent): number => {
   return enemy.rewardValue;
-};
-
-export const createEnemyWithConfig = (
-  enemyType: EnemyType,
-  spawnTime?: number,
-  structureTargetPriority?: StructureTargetPriority,
-) => {
-  const config = getEnemyConfig(enemyType);
-  return {
-    enemy: createEnemyComponent(enemyType, spawnTime, structureTargetPriority),
-    config,
-  };
 };
 
 // 構造物の優先度に関するユーティリティ関数

@@ -6,6 +6,7 @@ import { createAttackComponent } from '../components/attack-component';
 import { createPositionComponent, createPositionComponentFromPoint } from '../components/position-component';
 import { EntityManager } from './entity-manager';
 import { createMovementComponent } from '../components/movement-component';
+import { createTargetComponent } from '../components/target-component';
 
 /**
  * EnemyUnitConfig を RTS Entity+Component に変換する
@@ -37,14 +38,16 @@ export function enemyUnitConfigToEntity(enemyId: string, entityManager: EntityMa
 
   // 敵ユニット情報
   addComponent(entity, createEnemyComponent(
-    config.unitType as any,
+    config.id as any,
     0,
-    config.structureTargetPriority as any
+    config.structureTargetPriority as any,
+    config.rewardValue || 0
   ));
 
   addComponent(entity, createMovementComponent(config.speed));
 
   // targetを設定してあげる
+  addComponent(entity, createTargetComponent("entity"));
 
 
   return entity;

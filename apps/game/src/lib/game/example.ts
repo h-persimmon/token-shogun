@@ -6,7 +6,6 @@ import { createStructureComponent } from "./components/structure-component";
 import { createTargetComponent } from "./components/target-component";
 import { createUnitComponent } from "./components/unit-component";
 import {
-  createCommonEntityGroups,
   createEntityManager,
 } from "./entities/entity-manager";
 
@@ -72,7 +71,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   const entityManager = createEntityManager(scene);
 
   // 共通のEntity Groupsを作成
-  createCommonEntityGroups(entityManager);
+  // createCommonEntityGroups(entityManager);
 
   // ゲート（門）を作成
   const gate = entityManager.createEntity("gate", 0, 0);
@@ -196,8 +195,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(cannoneer1.id, createHealthComponent(60));
 
   // 砲手は直接攻撃（砲台に配備されると砲台の攻撃を使用）
-  const cannonneerAttack1 = createAttackComponent(15, 50, 1.0);
-  cannonneerAttack1.attackType = "direct"; // 直接攻撃
+  const cannonneerAttack1 = createAttackComponent(15, 50, 1.0, "direct");
   entityManager.addComponent(cannoneer1.id, cannonneerAttack1);
 
   entityManager.addComponent(

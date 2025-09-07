@@ -1,5 +1,4 @@
 import {
-  type AttackComponent,
   canAttack,
   executeAttack,
   isArtilleryAttack,
@@ -9,7 +8,6 @@ import {
 } from "../components/attack-component";
 import type { EnemyComponent } from "../components/enemy-component";
 import {
-  type HealthComponent,
   updateHealthComponent,
 } from "../components/health-component";
 import type { MovementComponent } from "../components/movement-component";
@@ -25,13 +23,11 @@ import {
 import type { StructureComponent } from "../components/structure-component";
 import {
   hasValidTarget,
-  type TargetComponent,
 } from "../components/target-component";
 import type { UnitComponent } from "../components/unit-component";
 import type { Entity } from "../entities/entity";
 import type { createEntityManager } from "../entities/entity-manager";
-
-type EntityManager = ReturnType<typeof createEntityManager>;
+import type { EntityManager } from "../entities/entity-manager";
 
 /**
  * 攻撃結果の情報
@@ -78,7 +74,7 @@ export class AttackSystem {
    * GameStateSystemの参照を設定
    * @param gameStateSystem GameStateSystemのインスタンス
    */
-  public setGameStateSystem(gameStateSystem: any): void {
+  public setGameStateSystem(gameStateSystem: GameStateSystem): void {
     this.gameStateSystem = gameStateSystem;
   }
 
@@ -110,22 +106,12 @@ export class AttackSystem {
    * @param currentTime 現在時刻（ミリ秒）
    */
   public processAttackerEntity(
-    attackerEntity: Entity,
+    attackerEntity: Entity<["attack" | "target" | "position"]>,
     currentTime: number,
   ): void {
-    const attackComponent = attackerEntity.components.get(
-      "attack",
-    ) as AttackComponent;
-    const targetComponent = attackerEntity.components.get(
-      "target",
-    ) as TargetComponent;
-    const attackerPosition = attackerEntity.components.get(
-      "position",
-    ) as PositionComponent;
-
-    if (!attackComponent || !targetComponent || !attackerPosition) {
-      return;
-    }
+    const attackComponent = attackerEntity.components["attack"]
+    const targetComponent = attackerEntity.components["target"]
+    const positionComponent = attackerEntity.components["position"]
 
     // 砲台の場合、ユニットが配備されているかチェック
     if (!this.canStructureAttack(attackerEntity)) {
@@ -136,10 +122,14 @@ export class AttackSystem {
       return;
     }
     // 攻撃クールダウンチェック
-    if (!canAttack(attackComponent, currentTime)) {
+    if (attackComponent && !canAttack(attackComponent, currentTime)) {
       return;
     }
 
+    // entityが削除されていないかをチェック
+    if (this.entitiesToRemove.has(attackerEntity.id)) {
+      return;
+    }
     // 有効な目標があるかチェック
     if (!hasValidTarget(targetComponent)) {
       return;
@@ -148,7 +138,7 @@ export class AttackSystem {
     // 目標エンティティを取得
     const targetEntity = this.entityManager.getEntity(
       targetComponent.targetEntityId!,
-    );
+    ) as Entity<["health", "position"]>;
     if (!targetEntity) {
       return;
     }
@@ -158,13 +148,12 @@ export class AttackSystem {
       return;
     }
 
+
     // 攻撃範囲内かチェック
-    const targetPosition = targetEntity.components.get(
-      "position",
-    ) as PositionComponent;
+  const targetPosition = targetEntity.components["position"];
     if (
       !targetPosition ||
-      !isInAttackRange(attackerPosition, targetPosition, attackComponent.range)
+      !isInAttackRange(positionComponent, targetPosition, attackComponent.range)
     ) {
       return;
     }
@@ -175,13 +164,11 @@ export class AttackSystem {
 
   /**
    * 砲台が攻撃可能かチェック（ユニットが配備されているか）
-   * @param attackerEntity 攻撃者エンティティ
+   * @param entity 攻撃者エンティティ
    * @returns 攻撃可能な場合true
    */
-  private canStructureAttack(attackerEntity: Entity): boolean {
-    const structureComponent = attackerEntity.components.get(
-      "structure",
-    ) as StructureComponent;
+  private canStructureAttack(entity: Entity<["attack" | "position" | "target"]>): boolean {
+    const structureComponent = entity.components.structure
 
     // 砲台でない場合は攻撃可能
     if (!structureComponent) {
@@ -208,8 +195,8 @@ export class AttackSystem {
   /** UnitがStructureに乗っている場合、攻撃できない
    *
    */
-  private canUnitAttack(unitEntity: Entity): boolean {
-    const unitComponent = unitEntity.components.get("unit") as UnitComponent;
+  private canUnitAttack(unitEntity: Entity<["attack" | "position" | "target"]>): boolean {
+    const unitComponent = unitEntity.components.unit;
     return !unitComponent || !unitComponent.deployedStructureId;
   }
 
@@ -221,16 +208,12 @@ export class AttackSystem {
    * @returns 攻撃結果の情報
    */
   public executeAttack(
-    attackerEntity: Entity,
-    targetEntity: Entity,
+    attackerEntity: Entity<["attack" | "position" | "target"]>,
+    targetEntity: Entity<["health", "position"]>,
     currentTime: number,
   ): AttackResult {
-    const attackComponent = attackerEntity.components.get(
-      "attack",
-    ) as AttackComponent;
-    const targetHealth = targetEntity.components.get(
-      "health",
-    ) as HealthComponent;
+  const attackComponent = attackerEntity.components["attack"];
+  const targetHealth = targetEntity.components["health"];
 
     if (!attackComponent || !targetHealth) {
       return {
@@ -299,32 +282,21 @@ export class AttackSystem {
    * @returns 実際に与えたダメージ量
    */
   public calculateAndApplyDamage(
-    attackerEntity: Entity,
-    targetEntity: Entity,
+    attackerEntity: Entity<["attack" | "target"]>,
+    targetEntity: Entity<["health"]>,
   ): number {
-    const attackComponent = attackerEntity.components.get(
-      "attack",
-    ) as AttackComponent;
-    const targetHealth = targetEntity.components.get(
-      "health",
-    ) as HealthComponent;
+    const attackComponent = attackerEntity.components.attack
+    const targetHealth = targetEntity.components.health
 
     if (!attackComponent || !targetHealth) {
       return 0;
     }
 
     // 基本ダメージを取得
-    let finalDamage = attackComponent.damage;
-
-    // ダメージ修正を適用（将来の拡張用）
-    finalDamage = this.applyDamageModifiers(
-      attackerEntity,
-      targetEntity,
-      finalDamage,
-    );
+    let damage = attackComponent.damage;
 
     // 実際に与えるダメージを計算（現在の体力を超えないように）
-    const actualDamage = Math.min(finalDamage, targetHealth.currentHealth);
+    const actualDamage = Math.min(damage, targetHealth.currentHealth);
 
     // ダメージを適用
     this.applyDamage(targetEntity, actualDamage);
@@ -337,13 +309,8 @@ export class AttackSystem {
    * @param targetEntity 目標エンティティ
    * @param damage ダメージ量
    */
-  public applyDamage(targetEntity: Entity, damage: number): void {
-    const healthComponent = targetEntity.components.get(
-      "health",
-    ) as HealthComponent;
-    if (!healthComponent) {
-      return;
-    }
+  public applyDamage(targetEntity: Entity<["health"]>, damage: number): void {
+    const healthComponent = targetEntity.components.health
 
     const wasAlive = healthComponent.currentHealth > 0;
 
@@ -352,19 +319,23 @@ export class AttackSystem {
 
     // 敵が撃破された場合の処理
     if (wasAlive && healthComponent.isDead) {
-      const enemyComponent = targetEntity.components.get("enemy");
+      const enemyComponent = targetEntity.components.enemy;
+       const unitComponent = targetEntity.components.unit;
       if (enemyComponent && this.gameStateSystem) {
         // GameStateSystemに敵撃破を通知
         this.gameStateSystem.notifyEnemyDefeated(targetEntity.id, 10);
-        console.log(`AttackSystem: Enemy ${targetEntity.id} defeated`);
 
         // 敵エンティティを削除
         this.scheduleEntityRemoval(targetEntity);
       }
+       // 味方ユニットの場合も削除
+       if (unitComponent) {
+         this.scheduleEntityRemoval(targetEntity);
+       }
     }
 
     // ゲートの場合はGameStateSystemに通知
-    const structureComponent = targetEntity.components.get("structure");
+    const structureComponent = targetEntity.components.structure
     if (
       structureComponent &&
       (structureComponent as any).structureType === "gate" &&
@@ -372,62 +343,6 @@ export class AttackSystem {
     ) {
       this.gameStateSystem.notifyStructureDamaged(targetEntity.id, damage);
     }
-  }
-
-  /**
-   * ダメージ修正を適用（将来の拡張用）
-   * @param attackerEntity 攻撃者エンティティ
-   * @param targetEntity 目標エンティティ
-   * @param baseDamage 基本ダメージ
-   * @returns 修正後のダメージ
-   */
-  private applyDamageModifiers(
-    attackerEntity: Entity,
-    targetEntity: Entity,
-    baseDamage: number,
-  ): number {
-    let modifiedDamage = baseDamage;
-
-    // 攻撃者の種類による修正
-    const attackerUnit = attackerEntity.components.get("unit") as
-      | UnitComponent
-      | undefined;
-    const attackerEnemy = attackerEntity.components.get("enemy") as
-      | EnemyComponent
-      | undefined;
-
-    if (attackerUnit) {
-      // ユニットタイプによるダメージ修正
-      modifiedDamage = this.applyUnitDamageModifier(
-        attackerUnit,
-        modifiedDamage,
-      );
-    } else if (attackerEnemy) {
-      // 敵タイプによるダメージ修正
-      modifiedDamage = this.applyEnemyDamageModifier(
-        attackerEnemy,
-        modifiedDamage,
-      );
-    }
-
-    // 目標の種類による修正
-    const targetStructure = targetEntity.components.get("structure") as
-      | StructureComponent
-      | undefined;
-    const targetEnemy = targetEntity.components.get("enemy") as
-      | EnemyComponent
-      | undefined;
-
-    if (targetStructure) {
-      // 構造物に対するダメージ修正
-      modifiedDamage = this.applyStructureDamageModifier(
-        targetStructure,
-        modifiedDamage,
-      );
-    }
-
-    // ダメージの最小値は1
-    return Math.max(1, Math.floor(modifiedDamage));
   }
 
   /**
@@ -496,12 +411,10 @@ export class AttackSystem {
    * @returns 攻撃可能な場合true
    */
   public canAttackTarget(targetEntity: Entity): boolean {
-    const healthComponent = targetEntity.components.get(
-      "health",
-    ) as HealthComponent;
+  const healthComponent = targetEntity.components["health"];
 
     // 体力がある場合のみ攻撃可能
-    return healthComponent?.currentHealth > 0 && !healthComponent?.isDead;
+    return typeof healthComponent?.currentHealth === "number" && healthComponent.currentHealth > 0 && !healthComponent.isDead;
   }
 
   /**
@@ -520,23 +433,19 @@ export class AttackSystem {
    * @param damageDealt 与えたダメージ量
    */
   private showAttackEffect(
-    attackerEntity: Entity,
-    targetEntity: Entity,
+    attackerEntity: Entity<["position"]>,
+    targetEntity: Entity<["position"]>,
     damageDealt: number,
   ): void {
-    const attackerPos = attackerEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const targetPos = targetEntity.components.get(
-      "position",
-    ) as PositionComponent;
+  const attackerPos = attackerEntity.components["position"];
+  const targetPos = targetEntity.components["position"];
 
     if (!attackerPos || !targetPos) {
       return;
     }
 
     // 攻撃エフェクトの種類を決定
-    const effectType = this.determineAttackEffectType(attackerEntity);
+    const effectType = "melee"; // デフォルト
 
     // エフェクト設定を取得
     const effectConfig = this.getAttackEffectConfig(effectType, damageDealt);
@@ -550,13 +459,9 @@ export class AttackSystem {
    * @param attackerEntity 攻撃者エンティティ
    * @returns エフェクトの種類
    */
-  private determineAttackEffectType(attackerEntity: Entity): AttackEffectType {
-    const unitComponent = attackerEntity.components.get("unit") as
-      | UnitComponent
-      | undefined;
-    const enemyComponent = attackerEntity.components.get("enemy") as
-      | EnemyComponent
-      | undefined;
+  private determineAttackEffectType(attackerEntity: Entity<["unit", "enemy"]>): AttackEffectType {
+  const unitComponent = attackerEntity.components["unit"]
+  const enemyComponent = attackerEntity.components["enemy"]
 
     if (unitComponent) {
       switch (unitComponent.unitType) {
@@ -711,24 +616,6 @@ export class AttackSystem {
     }
   }
 
-  /**
-   * 指定されたエンティティが攻撃中かチェック
-   * @param entityId エンティティID
-   * @returns 攻撃中の場合true
-   */
-  public isEntityAttacking(entityId: string): boolean {
-    const entity = this.entityManager.getEntity(entityId);
-    if (!entity) {
-      return false;
-    }
-
-    const attackComponent = entity.components.get("attack") as AttackComponent;
-    const targetComponent = entity.components.get("target") as TargetComponent;
-
-    return (
-      attackComponent?.target !== undefined && hasValidTarget(targetComponent)
-    );
-  }
 
   /**
    * 指定されたエンティティの攻撃を強制停止
@@ -741,7 +628,7 @@ export class AttackSystem {
       return false;
     }
 
-    const attackComponent = entity.components.get("attack") as AttackComponent;
+  const attackComponent = entity.components["attack"];
     if (!attackComponent) {
       return false;
     }
@@ -761,15 +648,9 @@ export class AttackSystem {
     attackerEntity: Entity,
     targetEntity: Entity,
   ): Entity | null {
-    const attackComponent = attackerEntity.components.get(
-      "attack",
-    ) as AttackComponent;
-    const attackerPosition = attackerEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const targetPosition = targetEntity.components.get(
-      "position",
-    ) as PositionComponent;
+  const attackComponent = attackerEntity.components["attack"];
+  const attackerPosition = attackerEntity.components["position"];
+  const targetPosition = targetEntity.components["position"];
 
     if (!attackComponent || !attackerPosition || !targetPosition) {
       return null;
@@ -854,12 +735,8 @@ export class AttackSystem {
     targetEntity: Entity,
     flightTime: number,
   ): { x: number; y: number } {
-    const targetPosition = targetEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const targetMovement = targetEntity.components.get(
-      "movement",
-    ) as MovementComponent;
+  const targetPosition = targetEntity.components["position"];
+  const targetMovement = targetEntity.components["movement"];
 
     if (!targetPosition) {
       return { x: 0, y: 0 };
@@ -930,12 +807,8 @@ export class AttackSystem {
     const projectilesToRemove: string[] = [];
 
     for (const [projectileId, projectile] of this.projectiles) {
-      const projectileComponent = projectile.components.get(
-        "projectile",
-      ) as ProjectileComponent;
-      const projectilePosition = projectile.components.get(
-        "position",
-      ) as PositionComponent;
+      const projectileComponent = projectile.components.projectile
+      const projectilePosition = projectile.components.position
 
       if (!projectileComponent || !projectilePosition) {
         projectilesToRemove.push(projectileId);
@@ -1101,7 +974,7 @@ export class AttackSystem {
   ): boolean {
     // 追跡対象を取得
     const targetEntity = projectileComponent.targetEntityId
-      ? this.entityManager.getEntity(projectileComponent.targetEntityId)
+      ? this.entityManager.getEntity(projectileComponent.targetEntityId) as Entity<["position" | "health"]>
       : null;
 
     if (!targetEntity) return false;
@@ -1121,9 +994,7 @@ export class AttackSystem {
       return true;
     }
 
-    const targetPosition = targetEntity?.components.get(
-      "position",
-    ) as PositionComponent;
+  const targetPosition = targetEntity?.components["position"];
   
     // 対象エンティティの追跡ロジック（要件2.2対応）
     const dx = targetPosition.point.x - projectilePosition.point.x;
@@ -1215,12 +1086,10 @@ export class AttackSystem {
    * @param projectileComponent 弾丸コンポーネント
    */
   private applyHomingProjectileHit(
-    targetEntity: Entity,
+    targetEntity: Entity<["health"]>,
     projectileComponent: ProjectileComponent,
   ): void {
-    const targetHealth = targetEntity.components.get(
-      "health",
-    ) as HealthComponent;
+  const targetHealth = targetEntity.components["health"];
 
     if (
       !targetHealth ||
@@ -1259,12 +1128,8 @@ export class AttackSystem {
       return false;
     }
 
-    const targetPosition = targetEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const targetHealth = targetEntity.components.get(
-      "health",
-    ) as HealthComponent;
+  const targetPosition = targetEntity.components["position"];
+  const targetHealth = targetEntity.components["health"];
 
     // 位置コンポーネントが存在し、体力コンポーネントが存在し、生きている場合のみ有効
     return !!(
@@ -1285,12 +1150,8 @@ export class AttackSystem {
     targetEntity: Entity,
     deltaTime: number,
   ): { x: number; y: number } {
-    const targetPosition = targetEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const targetMovement = targetEntity.components.get(
-      "movement",
-    ) as MovementComponent;
+  const targetPosition = targetEntity.components["position"];
+  const targetMovement = targetEntity.components["movement"];
 
     if (!targetPosition) {
       return { x: 0, y: 0 };
@@ -1367,23 +1228,16 @@ export class AttackSystem {
   private findEnemiesInRadius(
     center: { x: number; y: number },
     radius: number,
-  ): Entity[] {
+  ): Entity<["position" | "health", "enemy"]>[] {
     // 敵エンティティを取得（position、health、enemyコンポーネントを持つ）
     const enemies = this.entityManager.queryEntities({
       required: ["position", "health", "enemy"],
     });
 
-    const enemiesInRange: Entity[] = [];
+    const enemiesInRange: Entity<["position" | "health", "enemy"]>[] = [];
 
     for (const enemy of enemies) {
-      const position = enemy.components.get("position") as PositionComponent;
-      const health = enemy.components.get("health") as HealthComponent;
-
-      // 無効なエンティティをスキップ
-      if (!position || !health || health.isDead || health.currentHealth <= 0) {
-        continue;
-      }
-
+      const position = enemy.components["position"];
       // 距離を計算
       const distance = this.calculateDistance(center, position.point);
 
@@ -1437,9 +1291,7 @@ export class AttackSystem {
 
     // 各敵にダメージを適用
     for (const enemy of enemiesInRange) {
-      const enemyPosition = enemy.components.get(
-        "position",
-      ) as PositionComponent;
+  const enemyPosition = enemy.components["position"];
       if (!enemyPosition) continue;
 
       // 距離に応じたダメージ減衰を計算
@@ -1554,12 +1406,8 @@ export class AttackSystem {
     const currentTime = Date.now();
 
     const attackerInfo = attackers.map((attacker) => {
-      const attackComponent = attacker.components.get(
-        "attack",
-      ) as AttackComponent;
-      const targetComponent = attacker.components.get(
-        "target",
-      ) as TargetComponent;
+      const attackComponent = attacker.components["attack"];
+      const targetComponent = attacker.components["target"];
 
       const cooldownRemaining = Math.max(
         0,
@@ -1571,7 +1419,7 @@ export class AttackSystem {
       return {
         attackerId: attacker.id,
         targetId: targetComponent.targetEntityId,
-        canAttackNow: canAttack(attackComponent, currentTime),
+        canAttackNow: attackComponent && canAttack(attackComponent, currentTime),
         lastAttackTime: attackComponent.lastAttackTime,
         cooldownRemaining,
       };
@@ -1579,16 +1427,14 @@ export class AttackSystem {
 
     const projectileInfo = Array.from(this.projectiles.values()).map(
       (projectile) => {
-        const projectileComponent = projectile.components.get(
-          "projectile",
-        ) as ProjectileComponent;
+        const projectileComponent = projectile.components["projectile"];
 
         return {
           projectileId: projectile.id,
-          attackerId: projectileComponent.attackerId,
-          attackType: projectileComponent.attackType,
-          targetId: projectileComponent.targetEntityId,
-          flightTime: projectileComponent.flightTime,
+          attackerId: projectileComponent?.attackerId || "unknown",
+          attackType: projectileComponent?.attackType || "unknown",
+          targetId: projectileComponent?.targetEntityId || undefined,
+          flightTime: projectileComponent?.flightTime || undefined,
         };
       },
     );
@@ -1614,9 +1460,7 @@ export class AttackSystem {
    */
   public getProjectilesByAttacker(attackerId: string): Entity[] {
     return Array.from(this.projectiles.values()).filter((projectile) => {
-      const projectileComponent = projectile.components.get(
-        "projectile",
-      ) as ProjectileComponent;
+  const projectileComponent = projectile.components["projectile"];
       return projectileComponent?.attackerId === attackerId;
     });
   }
@@ -1634,7 +1478,7 @@ export class AttackSystem {
     totalReused: number;
     reuseRatio: number;
   } {
-    return this.projectilePool.getStats();
+  return this.projectilePool.getStats();
   }
 
   /**

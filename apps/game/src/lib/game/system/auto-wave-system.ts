@@ -296,7 +296,7 @@ export class AutoWaveSystem {
 
     let aliveCount = 0;
     for (const enemy of enemies) {
-      const healthComponent = enemy.components.get("health") as any;
+      const healthComponent = enemy.components.health
       if (
         healthComponent &&
         healthComponent.currentHealth > 0 &&

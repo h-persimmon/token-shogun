@@ -1,3 +1,4 @@
+import { ComponentMap } from "../components";
 import {
   type AttackComponent,
   calculateDistance,
@@ -5,6 +6,7 @@ import {
 import {
   type EnemyComponent,
   getStructureTargetPriority,
+  StructureTargetPriority,
 } from "../components/enemy-component";
 import type { HealthComponent } from "../components/health-component";
 import type {
@@ -25,14 +27,17 @@ import {
 } from "../components/target-component";
 import type { Entity } from "../entities/entity";
 import type { createEntityManager } from "../entities/entity-manager";
+import { MovementSystem } from "./movement-system";
 
 type EntityManager = ReturnType<typeof createEntityManager>;
 
 export class TargetingSystem {
   private entityManager: EntityManager;
+  private movementSystem: MovementSystem;
 
-  constructor(entityManager: EntityManager) {
+  constructor(entityManager: EntityManager, movementSystem: MovementSystem) {
     this.entityManager = entityManager;
+    this.movementSystem = movementSystem;
   }
 
   /**
@@ -42,7 +47,7 @@ export class TargetingSystem {
   public update(): void {
     // 攻撃可能なエンティティ（AttackComponentとTargetComponentを持つ）を取得
     const attackers = this.entityManager.queryEntities({
-      required: ["position", "attack", "target"],
+      required: ["target", "attack"],
     });
 
     for (const attacker of attackers) {
@@ -56,12 +61,8 @@ export class TargetingSystem {
    * @returns 攻撃範囲内の敵エンティティ配列
    */
   public findEnemiesInRange(attackerEntity: Entity): Entity[] {
-    const attackerPos = attackerEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const attackComponent = attackerEntity.components.get(
-      "attack",
-    ) as AttackComponent;
+  const attackerPos = attackerEntity.components["position"] as PositionComponent;
+  const attackComponent = attackerEntity.components["attack"] as AttackComponent;
 
     if (!attackerPos || !attackComponent) {
       return [];
@@ -77,7 +78,7 @@ export class TargetingSystem {
         continue;
       }
 
-      const targetPos = entity.components.get("position") as PositionComponent;
+  const targetPos = entity.components["position"] as PositionComponent;
       if (!targetPos) continue;
 
       // 攻撃範囲内かチェック
@@ -91,7 +92,7 @@ export class TargetingSystem {
   }
 
   /**
-   * 距離と優先度に基づいて最適な攻撃目標を選択
+   * 距離に基づいて最適な攻撃目標を選択
    * @param attackerEntity 攻撃者エンティティ
    * @param candidates 候補エンティティ配列
    * @returns 最適な攻撃目標エンティティ（見つからない場合はnull）
@@ -104,21 +105,20 @@ export class TargetingSystem {
       return null;
     }
 
-    const attackerPos = attackerEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    if (!attackerPos) {
-      return null;
-    }
-
+  const attackerPos = attackerEntity.components["position"];
+  if (!attackerPos) {
+    return null;
+  }
     let bestTarget: Entity | null = null;
-    let bestScore = -1;
+    let bestDistance = Infinity;
 
     for (const candidate of candidates) {
-      const score = this.calculateTargetScore(attackerEntity, candidate);
+      const candidatePos = candidate.components["position"];
+      if (!candidatePos) continue;
 
-      if (score > bestScore) {
-        bestScore = score;
+      const distance = calculateDistance(attackerPos.point, candidatePos.point);
+      if (distance < bestDistance) {
+        bestDistance = distance;
         bestTarget = candidate;
       }
     }
@@ -136,15 +136,9 @@ export class TargetingSystem {
     attackerEntity: Entity,
     targetEntity: Entity,
   ): number {
-    const attackerPos = attackerEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const targetPos = targetEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const targetHealth = targetEntity.components.get(
-      "health",
-    ) as HealthComponent;
+  const attackerPos = attackerEntity.components["position"] as PositionComponent;
+  const targetPos = targetEntity.components["position"] as PositionComponent;
+  const targetHealth = targetEntity.components["health"] as HealthComponent;
 
     if (
       !attackerPos ||
@@ -206,12 +200,8 @@ export class TargetingSystem {
    * @returns 種類スコア
    */
   private calculateTypeScore(targetEntity: Entity): number {
-    const enemyComponent = targetEntity.components.get(
-      "enemy",
-    ) as EnemyComponent;
-    const structureComponent = targetEntity.components.get(
-      "structure",
-    ) as StructureComponent;
+  const enemyComponent = targetEntity.components["enemy"] as EnemyComponent;
+  const structureComponent = targetEntity.components["structure"] as StructureComponent;
 
     // 構造物は高優先度
     if (structureComponent) {
@@ -251,12 +241,8 @@ export class TargetingSystem {
     targetEntity: Entity,
     attackerEntity: Entity,
   ): number {
-    const targetAttack = targetEntity.components.get(
-      "attack",
-    ) as AttackComponent;
-    const attackerHealth = attackerEntity.components.get(
-      "health",
-    ) as HealthComponent;
+  const targetAttack = targetEntity.components["attack"] as AttackComponent;
+  const attackerHealth = attackerEntity.components["health"] as HealthComponent;
 
     if (!targetAttack || !attackerHealth) {
       return 0;
@@ -273,8 +259,12 @@ export class TargetingSystem {
    * @param entity 判定対象エンティティ
    * @returns 敵の場合true
    */
-  public isEnemyEntity(entity: Entity): boolean {
-    return entity.components.has("enemy");
+  public isEnemyEntity<T extends (keyof ComponentMap)[]>(entity: Entity<T>): entity is Entity<(T[number] | "enemy")[]> {
+    return "enemy" in entity.components;
+  }
+
+  public isMovementEntity<T extends (keyof ComponentMap)[]>(entity: Entity<T>): entity is Entity<(T[number] | "movement")[]> {
+    return "movement" in entity.components;
   }
 
   /**
@@ -283,7 +273,7 @@ export class TargetingSystem {
    * @returns 味方の場合true
    */
   public isFriendlyEntity(entity: Entity): boolean {
-    return entity.components.has("unit") || entity.components.has("structure");
+  return "unit" in entity.components || "structure" in entity.components;
   }
 
   /**
@@ -344,19 +334,13 @@ export class TargetingSystem {
    */
   public isValidTarget(targetEntity: Entity): boolean {
     // 搭乗可能なStructureの場合
-    const structureComponent = targetEntity.components.get(
-      "structure",
-    ) as StructureComponent;
+  const structureComponent = targetEntity.components["structure"] as StructureComponent;
     if (structureComponent && canDeployUnit(structureComponent)) {
       return true;
     }
 
-    const healthComponent = targetEntity.components.get(
-      "health",
-    ) as HealthComponent;
-    const positionComponent = targetEntity.components.get(
-      "position",
-    ) as PositionComponent;
+  const healthComponent = targetEntity.components["health"] as HealthComponent;
+  const positionComponent = targetEntity.components["position"] as PositionComponent;
 
     // 体力があり、位置情報がある場合のみ有効
     return (
@@ -368,14 +352,11 @@ export class TargetingSystem {
    * 指定されたエンティティの目標を更新
    * @param attackerEntity 攻撃者エンティティ
    */
-  private updateEntityTarget(attackerEntity: Entity): void {
-    const targetComponent = attackerEntity.components.get(
-      "target",
-    ) as TargetComponent;
-    if (!targetComponent) return;
+  private updateEntityTarget(attackerEntity: Entity<["attack" | "target"]>): void {
+    const targetComponent = attackerEntity.components.target
 
     // 敵エンティティの場合は門を優先的に攻撃目標にする
-    if (this.isEnemyEntity(attackerEntity)) {
+    if (this.isEnemyEntity(attackerEntity) && this.isMovementEntity(attackerEntity)) {
       this.updateEnemyTarget(attackerEntity, targetComponent);
       return;
     }
@@ -390,7 +371,7 @@ export class TargetingSystem {
    * @param targetComponent 目標コンポーネント
    */
   private updateEnemyTarget(
-    enemyEntity: Entity,
+    enemyEntity: Entity<["enemy" | "movement" | "target"]>,
     targetComponent: TargetComponent,
   ): void {
     // 現在の目標が有効かチェック
@@ -406,34 +387,46 @@ export class TargetingSystem {
 
     // 目標がない場合は新しい目標を探す
     if (!targetComponent.targetEntityId) {
-      const enemyComponent = enemyEntity.components.get(
-        "enemy",
-      ) as EnemyComponent;
-      if (!enemyComponent) return;
+      const enemyComponent = enemyEntity.components["enemy"]
 
       // 敵の構造物優先度に基づいて目標を選択
       const priority = getStructureTargetPriority(enemyComponent);
-      let bestTarget: Entity | null = null;
 
-      // 攻撃範囲内の目標を検索
-      const friendlyTargetsInRange =
-        this.findFriendlyTargetsInRange(enemyEntity);
+      // すべてのstructureを取得
+      const allStructures = this.entityManager.queryEntities({
+        required: ["structure", "position", "health"],
+      });
+      const allAllyUnits = this.entityManager.queryEntities({
+        required: ["unit", "position", "health"],
+      });
+      const target = this.selectBestEnemyTargetByPriority(
+        enemyEntity,
+        allStructures,
+        allAllyUnits,
+        priority,
+      );
 
-      if (friendlyTargetsInRange.length > 0) {
-        bestTarget = this.selectBestTargetByPriority(
-          enemyEntity,
-          friendlyTargetsInRange,
-          priority,
+      if (target) {
+        // target変更
+        setEntityTarget(targetComponent, target.id);
+        // 移動目標も更新
+        this.movementSystem.moveEntityTo(
+          enemyEntity.id,
+          (target.components["position"] as PositionComponent).point
         );
       }
-
-      // 攻撃範囲内に目標がない場合は、最も近い優先目標を探す
-      if (!bestTarget) {
-        bestTarget = this.findNearestTargetByPriority(enemyEntity, priority);
-      }
-
-      if (bestTarget) {
-        setEntityTarget(targetComponent, bestTarget.id);
+    } else {
+      //  目標が移動している場合、目標位置を更新
+      const currentTarget = this.entityManager.getEntity(
+        targetComponent.targetEntityId,
+      );
+      if (currentTarget && "movement" in currentTarget.components) {
+        const targetPos = currentTarget.components["position"]
+        if (targetPos) {
+          // 移動目標を更新
+          this.movementSystem.moveEntityTo(enemyEntity.id, targetPos.point);
+          enemyEntity.components.movement.pathIndex = 1;
+        }
       }
     }
   }
@@ -444,9 +437,7 @@ export class TargetingSystem {
    * @returns 最も近い味方エンティティ（見つからない場合はnull）
    */
   private findNearestFriendlyTarget(enemyEntity: Entity): Entity | null {
-    const enemyPos = enemyEntity.components.get(
-      "position",
-    ) as PositionComponent;
+  const enemyPos = enemyEntity.components["position"] as PositionComponent;
     if (!enemyPos) return null;
 
     const allEntities = this.entityManager.getAllEntities();
@@ -458,7 +449,7 @@ export class TargetingSystem {
         continue;
       }
 
-      const targetPos = entity.components.get("position") as PositionComponent;
+  const targetPos = entity.components["position"] as PositionComponent;
       if (!targetPos) continue;
 
       const distance = calculateDistance(enemyPos.point, targetPos.point);
@@ -540,26 +531,36 @@ export class TargetingSystem {
    * @param priority 構造物優先度
    * @returns 最適な攻撃目標エンティティ（見つからない場合はnull）
    */
-  private selectBestTargetByPriority(
+  private selectBestEnemyTargetByPriority(
     attackerEntity: Entity,
-    candidates: Entity[],
-    priority: string,
+    structures: Entity<["structure"]>[],
+    allyUnits: Entity<["unit"]>[],
+    priority: StructureTargetPriority,
   ): Entity | null {
-    if (candidates.length === 0) return null;
+    // 優先度に基づいて候補をフィルタリング
+    if (structures.length === 0 && allyUnits.length === 0) return null;
 
     // 優先度に基づいて候補をフィルタリング
-    const prioritizedCandidates = this.filterCandidatesByPriority(
-      candidates,
-      priority,
-    );
+    const candidates = priority === "any" ? [
+      ...structures,
+      ...allyUnits
+    ] : priority === "defense" ? [
+      ...structures.filter(s => isDefenseStructure(s.components["structure"] as StructureComponent)),
+      ...allyUnits
+    ] : priority === "gate" ? [
+      ...structures.filter(s => isGateStructure(s.components["structure"] as StructureComponent))
+    ] : [];
 
-    if (prioritizedCandidates.length > 0) {
+    if (candidates.length > 0) {
       // 優先度の高い候補から最適な目標を選択
-      return this.selectBestTarget(attackerEntity, prioritizedCandidates);
+      return this.selectBestTarget(attackerEntity, candidates);
     }
 
     // 優先度の高い候補がない場合は、通常の選択を行う
-    return this.selectBestTarget(attackerEntity, candidates);
+    return this.selectBestTarget(attackerEntity, [
+      ...structures,
+      ...allyUnits
+    ]);
   }
 
   /**
@@ -575,9 +576,7 @@ export class TargetingSystem {
     const filtered: Entity[] = [];
 
     for (const candidate of candidates) {
-      const structureComponent = candidate.components.get(
-        "structure",
-      ) as StructureComponent;
+      const structureComponent = candidate.components["structure"] as StructureComponent;
 
       if (structureComponent) {
         // 構造物の場合は優先度に基づいてフィルタリング
@@ -625,9 +624,7 @@ export class TargetingSystem {
     enemyEntity: Entity,
     priority: string,
   ): Entity | null {
-    const enemyPos = enemyEntity.components.get(
-      "position",
-    ) as PositionComponent;
+  const enemyPos = enemyEntity.components["position"] as PositionComponent;
     if (!enemyPos) return null;
 
     const allEntities = this.entityManager.getAllEntities();
@@ -640,9 +637,7 @@ export class TargetingSystem {
         continue;
       }
 
-      const structureComponent = entity.components.get(
-        "structure",
-      ) as StructureComponent;
+  const structureComponent = entity.components["structure"] as StructureComponent;
 
       // 構造物の場合は優先度をチェック
       if (
@@ -657,7 +652,7 @@ export class TargetingSystem {
         continue;
       }
 
-      const targetPos = entity.components.get("position") as PositionComponent;
+  const targetPos = entity.components["position"] as PositionComponent;
       if (!targetPos) continue;
 
       const distance = calculateDistance(enemyPos.point, targetPos.point);
@@ -681,12 +676,8 @@ export class TargetingSystem {
    * @returns 攻撃範囲内の味方エンティティ配列
    */
   private findFriendlyTargetsInRange(enemyEntity: Entity): Entity[] {
-    const enemyPos = enemyEntity.components.get(
-      "position",
-    ) as PositionComponent;
-    const attackComponent = enemyEntity.components.get(
-      "attack",
-    ) as AttackComponent;
+  const enemyPos = enemyEntity.components["position"] as PositionComponent;
+  const attackComponent = enemyEntity.components["attack"] as AttackComponent;
 
     if (!enemyPos || !attackComponent) {
       return [];
@@ -706,7 +697,7 @@ export class TargetingSystem {
         continue;
       }
 
-      const targetPos = entity.components.get("position") as PositionComponent;
+  const targetPos = entity.components["position"] as PositionComponent;
       if (!targetPos) continue;
 
       // 攻撃範囲内かチェック
@@ -770,9 +761,7 @@ export class TargetingSystem {
       return false;
     }
 
-    const targetComponent = attackerEntity.components.get(
-      "target",
-    ) as TargetComponent;
+  const targetComponent = attackerEntity.components["target"] as TargetComponent;
     if (!targetComponent) {
       return false;
     }
@@ -806,9 +795,7 @@ export class TargetingSystem {
       return false;
     }
 
-    const targetComponent = attackerEntity.components.get(
-      "target",
-    ) as TargetComponent;
+  const targetComponent = attackerEntity.components["target"] as TargetComponent;
     if (!targetComponent) {
       return false;
     }
@@ -833,9 +820,7 @@ export class TargetingSystem {
     const allEntities = this.entityManager.getAllEntities();
 
     for (const entity of allEntities) {
-      const positionComponent = entity.components.get(
-        "position",
-      ) as PositionComponent;
+  const positionComponent = entity.components["position"] as PositionComponent;
       if (!positionComponent) continue;
 
       const distance = calculateDistance(center, positionComponent.point);
@@ -863,9 +848,7 @@ export class TargetingSystem {
     });
 
     return attackers.map((attacker) => {
-      const targetComponent = attacker.components.get(
-        "target",
-      ) as TargetComponent;
+  const targetComponent = attacker.components["target"] as TargetComponent;
       const enemiesInRange = this.findEnemiesInRange(attacker);
 
       let isValidTarget = false;

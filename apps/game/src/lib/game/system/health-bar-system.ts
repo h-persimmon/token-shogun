@@ -1,5 +1,6 @@
 import type { HealthComponent } from "../components/health-component";
 import type { PositionComponent } from "../components/position-component";
+import { Entity } from "../entities/entity";
 import type { createEntityManager } from "../entities/entity-manager";
 
 type EntityManager = ReturnType<typeof createEntityManager>;
@@ -64,11 +65,9 @@ export class HealthBarSystem {
    * 指定されたエンティティのHPバーを更新
    * @param entity エンティティ
    */
-  private updateHealthBar(entity: any): void {
-    const healthComponent = entity.components.get("health") as HealthComponent;
-    const positionComponent = entity.components.get(
-      "position",
-    ) as PositionComponent;
+  private updateHealthBar(entity: Entity): void {
+    const healthComponent = entity.components.health as HealthComponent;
+    const positionComponent = entity.components.position as PositionComponent;
 
     if (!healthComponent || !positionComponent) {
       // HPバーが存在する場合は削除

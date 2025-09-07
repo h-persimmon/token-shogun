@@ -48,14 +48,12 @@ export class InteractionSystem {
 
     // 全ての砲台エンティティを取得してクリック可能にする
     for (const entity of this.entityManager.getAllEntities()) {
-      const structureComponent = entity.components.get(
-        "structure",
-      ) as StructureComponent;
+      const structureComponent = entity.components.structure
       if (
         structureComponent &&
         structureComponent.attackableType === "with-unit"
       ) {
-        this.makeStructureClickable(entity.id, entity.sprite);
+        this.makeStructureClickable(entity.id, entity.sprite!);
       }
     }
   }

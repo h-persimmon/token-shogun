@@ -1,4 +1,5 @@
-import { StrategyModule } from '@kiro-rts/vibe-strategy';
+// import { StrategyModule } from '@kiro-rts/vibe-strategy';
+import { StrategyModule } from "../../../../../packages/vibe-strategy"
 import { UnitModule } from '../unit/module';
 import { TokenModule } from '../token/module';
 
@@ -40,14 +41,18 @@ export class OrderModule {
     const strategy = await this.strategyModule.generateStrategy(
       gameState,
       userPrompt,
-      "/api/order"
+      {
+        apiEndpoint: "/api/order",
+        temperature: 0.2,
+        maxRetries: 3
+      }
     );
 
     console.log("Generated strategy:", JSON.stringify(strategy, null, 2));
-    
+
     // 戦略に基づいてゲーム状況を更新
     this.updateGameStatus(strategy);
-    
+
     // トークンを消費
     await this.tokenModule.consumeToken(userPrompt);
   }
@@ -63,7 +68,7 @@ export class OrderModule {
         const units = Array.isArray(strategy.order.create.unit)
           ? strategy.order.create.unit
           : [strategy.order.create.unit];
-        
+
         for (const unit of units) {
           if (!unit.unitTypeId) {
             console.error("unitTypeId が見つかりません");
@@ -96,7 +101,7 @@ export class OrderModule {
           // ここで実際の目標設定処理を行う
           // 例: this.unitModule.setTargetEnemy(enemyId);
         }
-        
+
         // 建物を目標とする場合
         if (strategy.order.target.structure?.id) {
           const structureId = strategy.order.target.structure.id;

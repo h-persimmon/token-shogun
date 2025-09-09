@@ -8,6 +8,10 @@
       "dependsOn": ["copy-assets"],
       "persistent": true
     },
+    "start": {
+      "dependsOn": ["copy-assets"],
+      "persistent": true
+    },
     "build": {
       "dependsOn": ["copy-assets"],
       "outputs": ["dist/**", ".next/**"]

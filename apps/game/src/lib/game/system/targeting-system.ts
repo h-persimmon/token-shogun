@@ -59,6 +59,10 @@ export class TargetingSystem {
     }, {} as Record<string, string>);
 
     for (const attacker of attackers) {
+      // orderがあればデバッグ用の🔥を出力
+      if (attackerIdTargetMap[attacker.id]) {
+        console.log(`🔥 Attacker: ${attacker.id}, Target: ${attackerIdTargetMap[attacker.id]}`);
+      }
       this.updateEntityTarget(attacker, attackerIdTargetMap[attacker.id]);
     }
   }
@@ -462,6 +466,17 @@ export class TargetingSystem {
     currentTarget =
       (targetComponent.targetEntityId ? (this.entityManager.getEntity(targetComponent.targetEntityId) || null) : null);
 
+      // 敵が移動しているなら追尾する
+    if (currentTarget && "movement" in currentTarget.components) {
+      const targetPos = currentTarget.components["position"]
+      if (targetPos) {
+        // 移動目標を更新
+        this.movementSystem.moveEntityTo(friendlyEntity.id, targetPos.point);
+        if (friendlyEntity.components.movement) {
+          friendlyEntity.components.movement.pathIndex = 1;
+        }
+      }
+    }
     // 現在の敵が有効なら敵を判定する必要はない
     if (!forceUpdateTarget && currentTarget && this.isValidTarget(currentTarget)) {
       return;
@@ -476,6 +491,10 @@ export class TargetingSystem {
     const bestTarget = this.selectBestTarget(friendlyEntity, enemiesInRange);
     if (bestTarget) {
       setEntityTarget(targetComponent, bestTarget.id);
+      this.movementSystem.moveEntityTo(
+        friendlyEntity.id,
+        (bestTarget.components["position"] as PositionComponent).point
+      );
     } 
   }
 

@@ -25,6 +25,8 @@ import { InteractionSystem } from "../system/interaction-system";
 import { MovementSystem } from "../system/movement-system";
 import { TargetingSystem } from "../system/targeting-system";
 import { enemyUnitConfigs } from "@kiro-rts/characters";
+import { isAttackTargetOrder, Order } from "@kiro-rts/vibe-strategy";
+import { OrderListener } from '../order-listner/index';
 
 export class GameScene extends Scene {
   private entityManager?: ReturnType<typeof createEntityManager>;
@@ -42,6 +44,7 @@ export class GameScene extends Scene {
   private autoWaveSystem?: AutoWaveSystem;
   private frameTestSystem?: FrameTestSystem;
   private csvFilePath?: string;
+  private orderListener?: OrderListener;
 
   // パフォーマンス監視用
   private performanceStats = {
@@ -87,9 +90,10 @@ export class GameScene extends Scene {
     entity.sprite.setFrame(frameNumber);
   }
 
-  constructor(config?: { csvFilePath?: string }) {
+  constructor(config?: { csvFilePath?: string }, orderListener?: OrderListener) {
     super({ key: "GameScene" });
     this.csvFilePath = config?.csvFilePath;
+    this.orderListener = orderListener;
   }
 
   /**
@@ -238,56 +242,6 @@ export class GameScene extends Scene {
     }
   }
 
-  /**
-   * 敵の移動目標を設定
-   */
-  // private setupEnemyTargets(): void {
-  //   console.log("🔥", "setupEnemyTargets")
-  //   if (!this.entityManager) return;
-
-  //   const allEntities = this.entityManager.getAllEntities();
-  //   console.log("🔥", allEntities)
-  //   let gateEntity = null;
-
-  //   // ゲートエンティティを検索
-  //   for (const entity of allEntities) {
-  //     const structureComponent = entity.components["structure"];
-  //     if (
-  //       structureComponent &&
-  //       (structureComponent as any).structureType === "gate"
-  //     ) {
-  //       gateEntity = entity;
-  //       break;
-  //     }
-  //   }
-
-  //   if (!gateEntity) return;
-
-  //   // 敵エンティティに門への移動目標を設定
-  //   for (const entity of allEntities) {
-  //     const enemyComponent = entity.components["enemy"];
-  //     const movementComponent = entity.components["movement"];
-  //     console.log("🔥", enemyComponent, movementComponent)
-  //     if (enemyComponent && movementComponent && this.movementSystem) {
-  //       // 門の位置に向かって移動するように設定
-  //       const gatePos = gateEntity.components.position;
-  //       console.log("🔥", gatePos);
-  //       if (gatePos) {
-  //         this.movementSystem.moveEntityTo(entity.id, {
-  //           x: gatePos.point.x,
-  //           y: gatePos.point.y,
-  //         });
-  //         console.log(
-  //           `Enemy ${entity.id} targeting gate at (${gatePos.point.x}, ${gatePos.point.y})`,
-  //         );
-  //       }
-  //     }
-  //   }
-  // }
-
-  /**
-   * パフォーマンス監視UIを初期化
-   */
   private initializePerformanceUI(): void {
     if (!this.showPerformanceStats) return;
 
@@ -1110,6 +1064,8 @@ export class GameScene extends Scene {
 
     // 攻撃エフェクトイベントリスナーを設定
     this.setupAttackEffectListeners();
+
+    // OrderListnerを初期化
   }
   // ユニットSpriteを表示
   private displayUnitSprites() {
@@ -1192,8 +1148,11 @@ export class GameScene extends Scene {
   }
 
   update(time: number, delta: number) {
+    // 命令を取得
+    const orders = this.orderListener?.getOrders();
+
     // 各システムの更新処理を実行
-    this.updateSystems(time, delta);
+    this.updateSystems(time, delta, orders || []);
 
     // ユニットSpriteの位置と向きをコンポーネントに合わせて更新
     this.updateEntitySprites();
@@ -1212,7 +1171,7 @@ export class GameScene extends Scene {
    * 全システムの更新処理を実行
    * システム更新順序は依存関係を考慮して最適化されている
    */
-  private updateSystems(_time: number, delta: number): void {
+  private updateSystems(_time: number, delta: number, orders: Order[]): void {
     const currentTime = Date.now();
     const frameStartTime = performance.now();
 
@@ -1244,7 +1203,9 @@ export class GameScene extends Scene {
     // 3. TargetingSystem - 攻撃目標の選択
     if (this.targetingSystem) {
       measureSystemUpdate("Targeting", () => {
-        this.targetingSystem?.update();
+        this.targetingSystem?.update(
+          orders.filter(isAttackTargetOrder)
+        );
       });
     }
 

@@ -7,6 +7,8 @@ export type TargetComponent = Component<
   typeof targetComponentTag,
   {
     targetEntityId?: string;
+    // 優先攻撃的タイプ
+    enemyTypeByOrder?: string; 
     targetPosition?: Point;
     targetType: "entity" | "position" | "none";
     priority: number; // 0-10, 高いほど優先
@@ -68,6 +70,14 @@ export const hasValidTarget = (target: TargetComponent): boolean => {
     ((target.targetType === "entity" && target.targetEntityId !== undefined) ||
       (target.targetType === "position" && target.targetPosition !== undefined))
   );
+};
+
+// 優先攻撃ターゲットを設定する関数
+export const setPriorityAttackTarget = (
+  target: TargetComponent,
+  enemyType: string | undefined,
+): void => {
+  target.enemyTypeByOrder = enemyType;
 };
 
 export const evaluateTargetPriority = (

@@ -18,7 +18,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-papaparse": "^4.4.0",
-    "@kiro-rts/characters": "workspace:*"
+    "@kiro-rts/characters": "workspace:*",
+    "@kiro-rts/vibe-strategy": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",

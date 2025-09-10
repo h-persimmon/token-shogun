@@ -181,7 +181,9 @@ export class StrategyModule {
     }));
     
     // Create structures if available
-    const structures = [];
+    const structures: Array<{
+    id: string;
+  }> = [];
     
     return {
       allyUnits,

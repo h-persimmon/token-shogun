@@ -25,8 +25,9 @@ import { InteractionSystem } from "../system/interaction-system";
 import { MovementSystem } from "../system/movement-system";
 import { TargetingSystem } from "../system/targeting-system";
 import { enemyUnitConfigs } from "@kiro-rts/characters";
-import { isAttackTargetOrder, Order } from "@kiro-rts/vibe-strategy";
+import { isAttackTargetOrder, isDeploymentTargetOrder, Order } from "@kiro-rts/vibe-strategy";
 import { OrderListener } from '../order-listner/index';
+import { isDefenseCrystalOrder, isReviveAllyUnitOrder } from '../../../../../../packages/vibe-strategy/interfaces';
 
 export class GameScene extends Scene {
   private entityManager?: ReturnType<typeof createEntityManager>;
@@ -77,6 +78,7 @@ export class GameScene extends Scene {
   private updateSpriteDirection(entity: Entity): void {
     if (!entity.sprite) return;
 
+    const healthComponent = entity.components["health"];
     const movementComponent = entity.components["movement"] as
       | MovementComponent
       | undefined;
@@ -86,8 +88,9 @@ export class GameScene extends Scene {
     const direction = movementComponent.currentDirection;
     const animFrame = movementComponent.animationFrame; // 0, 1, 2
 
-    const frameNumber = spriteSheetNumber[direction][animFrame];
+    const frameNumber = healthComponent?.isDead ? 1 : spriteSheetNumber[direction][animFrame];
     entity.sprite.setFrame(frameNumber);
+    entity.sprite.setAngle(healthComponent?.isDead ? 90 : 0);
   }
 
   constructor(config?: { csvFilePath?: string }, orderListener?: OrderListener) {
@@ -1081,7 +1084,6 @@ export class GameScene extends Scene {
         | undefined;
       if (pos && entity.sprite) {
         entity.sprite.setPosition(pos.point.x, pos.point.y);
-        entity.sprite.setInteractive();
 
         // 初期のスプライトの向きを設定
         this.updateSpriteDirection(entity);
@@ -1151,8 +1153,9 @@ export class GameScene extends Scene {
     // 命令を取得
     const orders = this.orderListener?.getOrders();
 
+    const nowTime = Date.now();
     // 各システムの更新処理を実行
-    this.updateSystems(time, delta, orders || []);
+    this.updateSystems(nowTime, delta, orders || []);
 
     // ユニットSpriteの位置と向きをコンポーネントに合わせて更新
     this.updateEntitySprites();
@@ -1171,8 +1174,7 @@ export class GameScene extends Scene {
    * 全システムの更新処理を実行
    * システム更新順序は依存関係を考慮して最適化されている
    */
-  private updateSystems(_time: number, delta: number, orders: Order[]): void {
-    const currentTime = Date.now();
+  private updateSystems(time: number, delta: number, orders: Order[]): number {
     const frameStartTime = performance.now();
 
     // システム更新時間を測定するためのヘルパー関数
@@ -1189,14 +1191,16 @@ export class GameScene extends Scene {
     // 1. EnemySpawnSystem - 敵の生成
     if (this.enemySpawnSystem) {
       measureSystemUpdate("EnemySpawn", () => {
-        this.enemySpawnSystem?.update(currentTime);
+        this.enemySpawnSystem?.update(time);
       });
     }
 
     // 2. MovementSystem - エンティティの移動
     if (this.movementSystem) {
       measureSystemUpdate("Movement", () => {
-        this.movementSystem?.update(delta);
+        this.movementSystem?.update(
+          delta,
+        );
       });
     }
 
@@ -1204,7 +1208,7 @@ export class GameScene extends Scene {
     if (this.targetingSystem) {
       measureSystemUpdate("Targeting", () => {
         this.targetingSystem?.update(
-          orders.filter(isAttackTargetOrder)
+          orders.filter(o => isAttackTargetOrder(o) || isDefenseCrystalOrder(o) || isDeploymentTargetOrder(o))
         );
       });
     }
@@ -1212,14 +1216,14 @@ export class GameScene extends Scene {
     // 4. AttackSystem - 攻撃処理
     if (this.attackSystem) {
       measureSystemUpdate("Attack", () => {
-        this.attackSystem?.update(currentTime);
+        this.attackSystem?.update(time);
       });
     }
 
     // 5. GameStateSystem - ゲーム状態の管理と勝敗判定
     if (this.gameStateSystem) {
       measureSystemUpdate("GameState", () => {
-        this.gameStateSystem?.update(currentTime);
+        this.gameStateSystem?.update(time);
       });
     }
 
@@ -1247,7 +1251,7 @@ export class GameScene extends Scene {
     // 9. AutoWaveSystem - 自動ウェーブ進行
     if (this.autoWaveSystem) {
       measureSystemUpdate("AutoWave", () => {
-        this.autoWaveSystem?.update(currentTime);
+        this.autoWaveSystem?.update(time);
       });
     }
 
@@ -1258,10 +1262,29 @@ export class GameScene extends Scene {
       });
     }
 
+    const reviveAllyUnitOrder = orders.filter(o => isReviveAllyUnitOrder(o));
+    for(const order of reviveAllyUnitOrder) {
+      const entityId = order.entityId;
+      const entity = this.entityManager?.getEntity(entityId);
+      if(entity?.components.health?.isDead) {
+        entity.components.health.isDead = false;
+        entity.components.health.currentHealth = entity.components.health.maxHealth;
+        if(entity?.components.position) {
+          const gatePosition = this.entityManager?.queryEntities({ required: ["structure"] }).find(e => (e.components.structure as StructureComponent).structureType === "gate")?.components.position
+          if(gatePosition) {
+            entity.components.position.point = { x: gatePosition.point.x, y: gatePosition.point.y + 50 };
+          }
+        }
+      }
+    }
+      
+
     // フレーム時間統計を更新
     const frameEndTime = performance.now();
     const frameTime = frameEndTime - frameStartTime;
     this.updateFrameTimeStats(frameTime);
+
+    return time
   }
 
   /**

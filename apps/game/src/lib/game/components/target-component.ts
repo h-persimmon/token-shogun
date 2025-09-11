@@ -12,6 +12,8 @@ export type TargetComponent = Component<
     targetPosition?: Point;
     targetType: "entity" | "position" | "none";
     priority: number; // 0-10, 高いほど優先
+    // 特殊なターゲット状態を示すフラグ
+    specialMission?: "defense" | "deployment"; // 拠点守備または砲台配置のミッション中
   }
 >;
 
@@ -78,6 +80,21 @@ export const setPriorityAttackTarget = (
   enemyType: string | undefined,
 ): void => {
   target.enemyTypeByOrder = enemyType;
+};
+
+// 特殊ミッション（拠点防衛や砲台配置）の設定
+export const setSpecialMission = (
+  target: TargetComponent,
+  missionType: "defense" | "deployment" | undefined
+): void => {
+  target.specialMission = missionType;
+};
+
+// 特殊ミッションをクリア
+export const clearSpecialMission = (
+  target: TargetComponent
+): void => {
+  target.specialMission = undefined;
 };
 
 export const evaluateTargetPriority = (

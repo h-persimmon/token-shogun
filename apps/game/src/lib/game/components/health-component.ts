@@ -7,6 +7,8 @@ export type HealthComponent = Component<
   {
     maxHealth: number;
     currentHealth: number;
+    lastDamageTime?: number;
+    lastDamageFrom?: string; // ダメージを与えたエンティティID
     isDead: boolean;
   }
 >;
@@ -43,3 +45,12 @@ export const healHealthComponent = (
   );
   health.isDead = false;
 };
+
+export const recordDamageSource = (
+  health: HealthComponent,
+  sourceEntityId: string,
+  time: number,
+): void => {
+  health.lastDamageTime = time;
+  health.lastDamageFrom = sourceEntityId;
+}

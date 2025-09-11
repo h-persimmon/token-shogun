@@ -26,7 +26,7 @@ export const enemyUnitConfigs: EnemyUnitConfig[] = [
     },
     maxHealth: 15,
     speed: 32,
-    attackDamage: 10,
+    attackDamage: 1,
     attackRange: 64,
     structureTargetPriority: "gate"
   },
@@ -40,8 +40,8 @@ export const enemyUnitConfigs: EnemyUnitConfig[] = [
       displayWidth: 52
     },
     maxHealth: 200,
-    speed: 50,
-    attackDamage: 20,
+    speed: 10,
+    attackDamage: 2000,
     attackRange: 20,
     "structureTargetPriority": "any"
   } 

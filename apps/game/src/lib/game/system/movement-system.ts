@@ -100,6 +100,10 @@ export class MovementSystem {
     const entities = this.entityManager.getAllEntities();
 
     for (const entity of entities) {
+      if(entity.components?.health?.isDead) {
+        // 死亡している場合は移動しない
+        continue;
+      }
       this.updateEntityMovement(entity, delta);
       // アニメーションフレームも更新
       const movementComponent = entity.components.movement;

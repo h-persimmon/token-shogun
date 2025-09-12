@@ -17,7 +17,7 @@ import type { StructureComponent } from "../components/structure-component";
 import type { Entity } from "../entities/entity";
 import type { createEntityManager } from "../entities/entity-manager";
 import { setupEntityManager } from "../example";
-import type { OrderListener } from "../order-listner/index";
+import { OrderListener } from "../order-listner/index";
 import { AttackSystem } from "../system/attack-system";
 import { AutoDeploymentSystem } from "../system/auto-deployment-system";
 import { AutoWaveSystem } from "../system/auto-wave-system";
@@ -109,7 +109,7 @@ export class GameScene extends Scene {
   ) {
     super({ key: "GameScene" });
     this.csvFilePath = config?.csvFilePath;
-    this.orderListener = orderListener;
+    this.orderListener = orderListener || new OrderListener();
   }
 
   /**
@@ -1094,6 +1094,9 @@ export class GameScene extends Scene {
     this.setupAttackEffectListeners();
 
     // OrderListnerを初期化
+    if (this.orderListener && this.entityManager) {
+      this.orderListener.setEntityManager(this.entityManager);
+    }
   }
   // ユニットSpriteを表示
   private displayUnitSprites() {
@@ -1195,6 +1198,12 @@ export class GameScene extends Scene {
 
     // ゲーム状態UIを更新
     this.updateGameStateUI();
+
+    // OrderListenerのゲーム状態情報を更新
+    if (this.orderListener && this.entityManager) {
+      this.orderListener.setEntityManager(this.entityManager);
+      this.orderListener.updateGameStatusInfo();
+    }
   }
 
   /**

@@ -647,7 +647,7 @@ export class TargetingSystem {
       
     if (!forceUpdateTarget && currentTarget && this.isValidTarget(currentTarget)) {
       // 敵が移動しているなら追尾する
-      if ("movement" in currentTarget.components) {
+      if ("movement" in currentTarget.components && friendlyEntity.components.movement) {
         this.updateMovementToTarget(friendlyEntity, currentTarget);
       }
       return;
@@ -661,7 +661,9 @@ export class TargetingSystem {
     targetEntity = this.selectBestTarget(friendlyEntity, enemiesInRange);
     if (targetEntity) {
       setEntityTarget(targetComponent, targetEntity.id);
-      this.updateMovementToTarget(friendlyEntity, targetEntity);
+      if(friendlyEntity.components.movement) {
+        this.updateMovementToTarget(friendlyEntity, targetEntity);
+      }
     }
   }
   

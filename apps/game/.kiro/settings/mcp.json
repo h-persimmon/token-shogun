@@ -1,16 +1,30 @@
 {
   "mcpServers": {
-    "lsmcp": {
-      "command": "npx",
-      "args": ["-y", "@mizchi/lsmcp", "-p", "tsgo"],
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "/Users/xxx/sapper-blog-app"
+      ],
       "env": {},
       "disabled": false,
-      "autoApprove": ["index_onboarding", "list_dir", "search_symbols"]
-    },
-    "serena": {
-      "args": [],
-      "disabled": true,
-      "autoApprove": []
+      "autoApprove": [
+        "*",
+        "get_symbols_overview",
+        "activate_project",
+        "check_onboarding_performed",
+        "onboarding",
+        "list_dir",
+        "find_symbol",
+        "write_memory",
+        "write_memory"
+      ]
     }
   }
 }

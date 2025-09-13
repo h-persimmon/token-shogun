@@ -1029,8 +1029,10 @@ export class GameScene extends Scene {
     });
     // サイズ小さくして読み取り
     this.load.image("cannon", "/game-assets/cannon.png");
-    this.load.tilemapTiledJSON("map", "/game-assets/tilemaps/map_01.json");
-    this.load.image("tiles", "/game-assets/tilemaps/tiles.png");
+    this.load.image("basic", "/game-assets/tilemaps/basic.png");
+    this.load.image("wafu", "/game-assets/tilemaps/wafu.png");
+    this.load.image("shrine1", "/game-assets/tilemaps/shrine1.png");
+    this.load.tilemapTiledJSON("map", "/game-assets/tilemaps/map02.json");
   }
 
   create() {
@@ -1045,10 +1047,19 @@ export class GameScene extends Scene {
     this.navMeshPlugin = (this as any).navMeshPlugin;
 
     const tilemap = this.add.tilemap("map");
-    const tileset = tilemap.addTilesetImage("tiles", "tiles", 32, 32)!;
-    console.log(tileset);
-    tilemap.createLayer("bg", tileset);
-    const _wallLayer = tilemap.createLayer("walls", tileset);
+    const tileset1 = tilemap.addTilesetImage("wafu", "wafu", 48, 48)!;
+    const tileset2 = tilemap.addTilesetImage("shrine1", "shrine1", 48, 48)!;
+    const tileset3 = tilemap.addTilesetImage("basic", "basic", 48, 48)!;
+
+    tilemap.createLayer("ground", [
+      tileset1, tileset2, tileset3
+    ]);
+    tilemap.createLayer("building", [
+      tileset1, tileset2, tileset3
+    ]);
+    tilemap.createLayer("building2", [
+      tileset1, tileset2, tileset3
+    ]);
 
     // Load the navMesh from the tilemap object layer "navmesh" (created in Tiled). The navMesh was
     // created with 12.5 pixels of space around obstacles.

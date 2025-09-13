@@ -18,7 +18,7 @@ export const createPositionComponent = (
   y: number,
 ): PositionComponent => ({
   type: positionComponentTag,
-  point: { x: x * 32, y: y * 32 },
+  point: { x: x * 48 + 24, y: y * 48 + 24 },
 });
 
 export const createPositionComponentFromPoint = (

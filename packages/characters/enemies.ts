@@ -40,8 +40,8 @@ export const enemyUnitConfigs: EnemyUnitConfig[] = [
       displayWidth: 52
     },
     maxHealth: 200,
-    speed: 10,
-    attackDamage: 2000,
+    speed: 32,
+    attackDamage: 5,
     attackRange: 20,
     "structureTargetPriority": "any"
   } 

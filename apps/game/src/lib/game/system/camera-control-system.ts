@@ -269,6 +269,7 @@ export class CameraControlSystem {
    * @private
    */
   private setupInputHandlers(): void {
+    console.log("🔥", "setupInputHandler", this.scene)
     try {
       // ポインターダウンイベント
       this.scene.input.on("pointerdown", this.handlePointerDown, this);
@@ -315,10 +316,13 @@ export class CameraControlSystem {
    * @private
    */
   private handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
+    console.log("🔥", "handlePointerDown", this.config.enabled);
+    console.log("🔥", "handlePointerDown", this.cameraState);
     try {
       if (!this.config.enabled || !this.cameraState.canMove) {
         return;
       }
+      console.log("🔥", "handlePointerDown", pointer)
 
       // ポインター情報のバリデーション
       if (!this.validatePointer(pointer)) {

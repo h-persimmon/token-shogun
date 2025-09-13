@@ -135,10 +135,10 @@ export class GameScene extends Scene {
     );
 
     this.cameraControlSystem = new CameraControlSystem(this, {
-      height: 20,
-      width: 20,
-      tileHeight: 32,
-      tileWidth: 32,
+      height: 48 * 48,
+      width: 48 * 48,
+      tileHeight: 48,
+      tileWidth: 48,
     });
 
     // AttackSystemを初期化

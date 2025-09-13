@@ -75,7 +75,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
 
   // ゲート（門）を作成
   const gate = entityManager.createEntity("gate", 0, 0);
-  entityManager.addComponent(gate.id, createPositionComponent(29, 10));
+  entityManager.addComponent(gate.id, createPositionComponent(24, 12));
   entityManager.addComponent(gate.id, createHealthComponent(200));
   const gateStructure = createStructureComponent(true, "none", "cannon"); // 重要な構造物、攻撃不可
   (gateStructure as any).structureType = "gate"; // 識別用
@@ -98,7 +98,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   const artilleryCannon1 = entityManager.createEntity("cannon", 200, 150, 0.5);
   entityManager.addComponent(
     artilleryCannon1.id,
-    createPositionComponent(18, 7),
+    createPositionComponent(20, 17),
   );
   entityManager.addComponent(artilleryCannon1.id, createHealthComponent(150));
   const artilleryCannon1Structure = createStructureComponent(
@@ -122,7 +122,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   const artilleryCannon2 = entityManager.createEntity("cannon", 200, 450, 0.5);
   entityManager.addComponent(
     artilleryCannon2.id,
-    createPositionComponent(18, 12),
+    createPositionComponent(28, 17),
   );
   entityManager.addComponent(artilleryCannon2.id, createHealthComponent(150));
   const artilleryCannon2Structure = createStructureComponent(
@@ -144,7 +144,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
 
   // 弓矢攻撃ストラクチャー（Archer Tower）を作成
   const archerTower1 = entityManager.createEntity("soldier", 300, 200, 0.6);
-  entityManager.addComponent(archerTower1.id, createPositionComponent(20, 8));
+  entityManager.addComponent(archerTower1.id, createPositionComponent(15, 20));
   entityManager.addComponent(archerTower1.id, createHealthComponent(100));
   const archerTower1Structure = createStructureComponent(
     false,
@@ -155,7 +155,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(archerTower1.id, archerTower1Structure);
 
   // 弓矢攻撃用のAttackComponentを作成
-  const homingAttack1 = createAttackComponent(25, 120, 1.2); // 中威力、中射程、短クールダウン
+  const homingAttack1 = createAttackComponent(25, 300, 1.2); // 中威力、中射程、短クールダウン
   homingAttack1.attackType = "homing";
   homingAttack1.projectileSpeed = 300; // 高速弾丸
   homingAttack1.projectileSprite = "arrow";
@@ -168,7 +168,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   }
 
   const archerTower2 = entityManager.createEntity("soldier", 300, 400, 0.6);
-  entityManager.addComponent(archerTower2.id, createPositionComponent(20, 11));
+  entityManager.addComponent(archerTower2.id, createPositionComponent(33, 20));
   entityManager.addComponent(archerTower2.id, createHealthComponent(100));
   const archerTower2Structure = createStructureComponent(
     false,
@@ -178,7 +178,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   (archerTower2Structure as any).structureType = "archer_tower";
   entityManager.addComponent(archerTower2.id, archerTower2Structure);
 
-  const homingAttack2 = createAttackComponent(25, 120, 1.2);
+  const homingAttack2 = createAttackComponent(25, 300, 1.2);
   homingAttack2.attackType = "homing";
   homingAttack2.projectileSpeed = 300;
   homingAttack2.projectileSprite = "arrow";
@@ -191,11 +191,11 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
 
   // 配備可能なユニットを作成（砲台用の砲手）
   const cannoneer1 = entityManager.createEntity("soldier", 350, 200, 2);
-  entityManager.addComponent(cannoneer1.id, createPositionComponent(24, 9));
+  entityManager.addComponent(cannoneer1.id, createPositionComponent(22, 13));
   entityManager.addComponent(cannoneer1.id, createHealthComponent(60));
 
   // 砲手は直接攻撃（砲台に配備されると砲台の攻撃を使用）
-  const cannonneerAttack1 = createAttackComponent(15, 50, 1.0, "direct");
+  const cannonneerAttack1 = createAttackComponent(15, 200, 1.0, "direct");
   entityManager.addComponent(cannoneer1.id, cannonneerAttack1);
 
   entityManager.addComponent(
@@ -207,10 +207,10 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   cannoneer1.sprite?.setTint(0x4169e1); // 青色（砲手）
 
   const cannoneer2 = entityManager.createEntity("soldier", 350, 400, 2);
-  entityManager.addComponent(cannoneer2.id, createPositionComponent(24, 10));
+  entityManager.addComponent(cannoneer2.id, createPositionComponent(23, 13));
   entityManager.addComponent(cannoneer2.id, createHealthComponent(60));
 
-  const cannonneerAttack2 = createAttackComponent(15, 50, 1.0);
+  const cannonneerAttack2 = createAttackComponent(15, 200, 1.0);
   cannonneerAttack2.attackType = "direct";
   entityManager.addComponent(cannoneer2.id, cannonneerAttack2);
 
@@ -224,7 +224,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
 
   // 配備可能なユニットを作成（弓矢塔用の弓兵）
   const archer1 = entityManager.createEntity("soldier", 450, 200, 2);
-  entityManager.addComponent(archer1.id, createPositionComponent(26, 9));
+  entityManager.addComponent(archer1.id, createPositionComponent(26, 13));
   entityManager.addComponent(archer1.id, createHealthComponent(50));
 
   // 弓兵は弓矢攻撃（弓矢塔に配備されると塔の攻撃を使用）
@@ -240,7 +240,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   archer1.sprite?.setTint(0x00ff00); // 緑色（弓兵）
 
   const archer2 = entityManager.createEntity("soldier", 450, 400, 2);
-  entityManager.addComponent(archer2.id, createPositionComponent(26, 10));
+  entityManager.addComponent(archer2.id, createPositionComponent(27, 13));
   entityManager.addComponent(archer2.id, createHealthComponent(50));
 
   const archerAttack2 = createAttackComponent(20, 80, 1.2);

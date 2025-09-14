@@ -74,6 +74,7 @@ export class GameScene extends Scene {
 
   // ゲーム状態UI要素
   private gameStateUI = {
+    wafuWindow: null as Phaser.GameObjects.Image | null, // 和風ウィンドウ背景
     waveText: null as Phaser.GameObjects.Text | null,
     enemyCountText: null as Phaser.GameObjects.Text | null,
     gateHealthText: null as Phaser.GameObjects.Text | null,
@@ -272,6 +273,8 @@ export class GameScene extends Scene {
 
     // ゲートエンティティを検索してGameStateSystemに設定
     const allEntities = this.entityManager.getAllEntities();
+    let gateEntity = null;
+    
     for (const entity of allEntities) {
       const structureComponent = entity.components["structure"];
       if (
@@ -280,33 +283,29 @@ export class GameScene extends Scene {
       ) {
         this.gameStateSystem.setGateEntity(entity.id);
         console.log(`Gate entity set: ${entity.id}`);
+        gateEntity = entity;
         break;
+      }
+    }
+    
+    // ゲートが画面の中心に来るようにカメラの初期位置を設定
+    if (gateEntity && this.cameraControlSystem) {
+      const positionComponent = gateEntity.components["position"];
+      if (positionComponent) {
+        const gateX = (positionComponent as any).point.x;
+        const gateY = (positionComponent as any).point.y;
+        
+        // 画面サイズの半分を考慮して、ゲートが中心に来るように調整
+        const offsetX = this.cameras.main.width / 2;
+        const offsetY = this.cameras.main.height / 2;
+        
+        // カメラ位置を設定（ゲートが画面中央に表示されるよう調整）
+        this.cameraControlSystem.setCameraPosition(gateX - offsetX, gateY - offsetY);
+        console.log(`Camera centered on gate at (${gateX}, ${gateY})`);
       }
     }
   }
 
-  private initializePerformanceUI(): void {
-    if (!this.showPerformanceStats) return;
-
-    // FPS表示
-    this.fpsText = this.add.text(10, 10, "FPS: 0", {
-      fontSize: "14px",
-      color: "#00ff00",
-      backgroundColor: "#000000",
-      padding: { x: 5, y: 2 },
-    });
-
-    // パフォーマンス統計表示
-    this.performanceText = this.add.text(10, 35, "", {
-      fontSize: "12px",
-      color: "#ffff00",
-      backgroundColor: "#000000",
-      padding: { x: 5, y: 2 },
-    });
-
-    // パフォーマンス統計の初期化
-    this.performanceStats.lastFpsUpdate = Date.now();
-  }
 
   /**
    * フレーム時間統計を更新
@@ -352,9 +351,6 @@ export class GameScene extends Scene {
           this.entityManager.getAllEntities().length;
       }
 
-      // UI表示を更新
-      this.updatePerformanceUI();
-
       // フレーム時間統計をリセット
       this.performanceStats.maxFrameTime = 0;
       this.performanceStats.minFrameTime = Infinity;
@@ -364,6 +360,33 @@ export class GameScene extends Scene {
   /**
    * パフォーマンスUIを更新
    */
+  /**
+   * パフォーマンスUIを初期化
+   */
+  private initializePerformanceUI(): void {
+    // FPS表示を作成
+    this.fpsText = this.add.text(10, 10, "FPS: 0", {
+      fontSize: "14px",
+      color: "#00ff00",
+      backgroundColor: "#000000",
+      padding: { x: 5, y: 2 },
+    });
+    this.fpsText.setScrollFactor(0); // カメラに追従
+
+    // パフォーマンス統計表示を作成
+    this.performanceText = this.add.text(10, 40, "", {
+      fontSize: "12px",
+      color: "#ffffff",
+      backgroundColor: "#000000",
+      padding: { x: 5, y: 2 },
+    });
+    this.performanceText.setScrollFactor(0); // カメラに追従
+    
+    // 初期表示設定
+    this.fpsText.setVisible(this.showPerformanceStats);
+    this.performanceText.setVisible(this.showPerformanceStats);
+  }
+
   private updatePerformanceUI(): void {
     if (!this.fpsText || !this.performanceText) return;
 
@@ -419,71 +442,120 @@ export class GameScene extends Scene {
    * ゲーム状態UIを初期化
    */
   private initializeGameStateUI(): void {
-    const uiX = this.cameras.main.width - 200;
-    const uiY = 20;
+    // 画面右上に固定するUIコンテナを作成
+    const uiContainer = this.add.container(0, 0);
+    uiContainer.setScrollFactor(0); // カメラに追従させる設定
+    
+    // 画面右上のUIの位置を設定
+    const padding = 0; // 画面端からの余白
+    
+    // 和風ウィンドウを背景として配置（画面右上に固定）
+    this.gameStateUI.wafuWindow = this.add.image(
+      this.cameras.main.width - padding, // 右端から余白分引いた位置
+      padding, // 上端から余白分下げた位置
+      "wafu_window"
+    );
+    
+    // テクスチャのサイズを取得
+    const textureWidth = this.textures.get('wafu_window').getSourceImage().width;
+    const textureHeight = this.textures.get('wafu_window').getSourceImage().height;
+    
+    // ウィンドウのスケールを適切に設定（横幅が画面の1/3くらいになるように）
+    const targetWidth = 200
+    const scale = targetWidth / textureWidth;
+    
+    // 画像のサイズを調整
+    this.gameStateUI.wafuWindow.setScale(scale);
+    
+    // カメラに追従させる設定
+    this.gameStateUI.wafuWindow.setScrollFactor(0);
+    
+    // 画像の原点を右上に設定し、位置調整
+    this.gameStateUI.wafuWindow.setOrigin(1, 0); // 右上を原点に設定
+    
+    // コンテナに追加
+    uiContainer.add(this.gameStateUI.wafuWindow);
 
-    // ウェーブ情報表示
-    this.gameStateUI.waveText = this.add.text(uiX, uiY, "Wave: 0/3", {
-      fontSize: "16px",
-      color: "#ffffff",
-      backgroundColor: "#000000",
-      padding: { x: 8, y: 4 },
-    });
+    // 和風ウィンドウ内にUIを配置するための基準点
+    const windowWidth = this.gameStateUI.wafuWindow.displayWidth;
+    const windowHeight = this.gameStateUI.wafuWindow.displayHeight;
+    const windowX = this.cameras.main.width - padding - windowWidth;
+    const windowY = padding;
+    
+    // ウィンドウ内の余白（ウィンドウの大きさに応じて調整）
+    const innerPadding = windowWidth * 0.08;
+    
+    // ウェーブ情報表示 - 右揃え
+    this.gameStateUI.waveText = this.add.text(
+      windowX + windowWidth - innerPadding,
+      windowY + innerPadding + 20,
+      "Wave: 0/3", 
+      {
+        fontSize: "24px",
+        color: "#6b5846",
+      }
+    );
+    this.gameStateUI.waveText.setOrigin(1, 0); // 右揃えに設定
+    this.gameStateUI.waveText.setScrollFactor(0); // カメラに追従
+    uiContainer.add(this.gameStateUI.waveText);
 
-    // 敵数表示
+    // 敵数表示 - 右揃え
     this.gameStateUI.enemyCountText = this.add.text(
-      uiX,
-      uiY + 30,
+      windowX + windowWidth - innerPadding,
+      windowY + innerPadding + 50,
       "Enemies: 0",
       {
         fontSize: "14px",
-        color: "#ff6666",
-        backgroundColor: "#000000",
-        padding: { x: 8, y: 4 },
-      },
+        color: "#a81c18",
+      }
     );
+    this.gameStateUI.enemyCountText.setOrigin(1, 0); // 右揃えに設定
+    this.gameStateUI.enemyCountText.setScrollFactor(0); // カメラに追従
+    uiContainer.add(this.gameStateUI.enemyCountText);
 
-    // 門の体力表示
+    // 門の体力表示 - 右揃え
     this.gameStateUI.gateHealthText = this.add.text(
-      uiX,
-      uiY + 60,
-      "Gate Health:",
+      windowX + windowWidth - innerPadding,
+      windowY + innerPadding + 80,
+      "Crystal Health:",
       {
         fontSize: "14px",
-        color: "#66ff66",
-        backgroundColor: "#000000",
-        padding: { x: 8, y: 4 },
-      },
+        color: "#6b5846",
+      }
     );
+    this.gameStateUI.gateHealthText.setOrigin(1, 0); // 右揃えに設定
+    this.gameStateUI.gateHealthText.setScrollFactor(0); // カメラに追従
+    uiContainer.add(this.gameStateUI.gateHealthText);
 
-    // 門の体力バー背景
-    this.gameStateUI.gateHealthBarBg = this.add.rectangle(
-      uiX + 10,
-      uiY + 85,
-      150,
-      12,
-      0x333333,
-    );
-    this.gameStateUI.gateHealthBarBg.setStrokeStyle(1, 0x666666);
-    this.gameStateUI.gateHealthBarBg.setOrigin(0, 0.5);
+    // 体力バーの最大幅を設定
+    const healthBarWidth = windowWidth * 0.5;
+    
 
-    // 門の体力バー
+    // 門の体力バー - 右揃え
     this.gameStateUI.gateHealthBar = this.add.rectangle(
-      uiX + 10,
-      uiY + 85,
-      150,
+      windowX + windowWidth - innerPadding,
+      windowY + innerPadding + 100,
+      healthBarWidth,
       10,
       0x00ff00,
     );
-    this.gameStateUI.gateHealthBar.setOrigin(0, 0.5);
+    this.gameStateUI.gateHealthBar.setOrigin(1, 0.5); // 右揃えに設定
+    this.gameStateUI.gateHealthBar.setScrollFactor(0); // カメラに追従
+    uiContainer.add(this.gameStateUI.gateHealthBar);
 
-    // スコア表示
-    this.gameStateUI.scoreText = this.add.text(uiX, uiY + 110, "Score: 0", {
-      fontSize: "16px",
-      color: "#ffff00",
-      backgroundColor: "#000000",
-      padding: { x: 8, y: 4 },
-    });
+    // スコア表示 - 右揃え
+    this.gameStateUI.scoreText = this.add.text(
+      windowX + windowWidth - innerPadding,
+      windowY + innerPadding + 120,
+      "Score: 0",
+      {
+        fontSize: "16px",
+        color: "#6b5846",
+      }
+    );
+    this.gameStateUI.scoreText.setOrigin(1, 0); // 右揃えに設定
+    this.gameStateUI.scoreText.setScrollFactor(0); // カメラに追従
+    uiContainer.add(this.gameStateUI.scoreText);
 
     // ゲーム状態システムのイベントリスナーを設定
     this.setupGameStateEventListeners();
@@ -540,23 +612,29 @@ export class GameScene extends Scene {
     // 門の体力を更新
     if (this.gameStateUI.gateHealthText) {
       this.gameStateUI.gateHealthText.setText(
-        `Gate: ${gameState.gateHealth}/${gameState.maxGateHealth}`,
+        `Crystal:${gameState.gateHealth}/${gameState.maxGateHealth}`,
       );
     }
 
     // 門の体力バーを更新
     if (this.gameStateUI.gateHealthBar && gameState.maxGateHealth > 0) {
       const healthRatio = gameState.gateHealth / gameState.maxGateHealth;
-      const barWidth = 150 * healthRatio;
+      
+      // 和風ウィンドウのサイズに合わせて体力バーの長さを計算
+      // ウィンドウの幅の70%程度を体力バーの最大幅に設定
+      const maxBarWidth = 120
+      
+      const barWidth = maxBarWidth * healthRatio;
       this.gameStateUI.gateHealthBar.setSize(barWidth, 10);
-
-      // 体力に応じて色を変更
-      let barColor = 0x00ff00; // 緑
-      if (healthRatio < 0.3) {
-        barColor = 0xff0000; // 赤
-      } else if (healthRatio < 0.6) {
-        barColor = 0xffff00; // 黄
+      
+      // 右揃えのため、体力バーの位置を調整（元の右端位置を維持）
+      if (this.gameStateUI.gateHealthBar.originX === 1) {
+        // 既に右揃えになっているので、位置を維持
+        // 右端基準なので幅が変わっても位置を調整しなくて良い
       }
+      
+
+      const barColor = 0x6b5846
       this.gameStateUI.gateHealthBar.setFillStyle(barColor);
     }
 
@@ -580,6 +658,8 @@ export class GameScene extends Scene {
 
     // 勝利画面コンテナを作成
     this.gameStateUI.victoryScreen = this.add.container(centerX, centerY);
+    // カメラに追従させる設定
+    this.gameStateUI.victoryScreen.setScrollFactor(0);
 
     // 背景
     const background = this.add.rectangle(0, 0, 400, 300, 0x000000, 0.8);
@@ -601,7 +681,7 @@ export class GameScene extends Scene {
       `Final Score: ${gameState?.score || 0}`,
       `Waves Completed: ${gameState?.currentWave || 0}/${gameState?.totalWaves || 0}`,
       `Enemies Defeated: ${(gameState?.enemiesSpawned || 0) - (gameState?.enemiesRemaining || 0)}`,
-      `Gate Health: ${gameState?.gateHealth || 0}/${gameState?.maxGateHealth || 0}`,
+      `Crystal Health: ${gameState?.gateHealth || 0}/${gameState?.maxGateHealth || 0}`,
     ];
 
     const statsDisplay = this.add.text(0, -20, statsText.join("\n"), {
@@ -638,6 +718,8 @@ export class GameScene extends Scene {
 
     // ゲームオーバー画面コンテナを作成
     this.gameStateUI.gameOverScreen = this.add.container(centerX, centerY);
+    // カメラに追従させる設定
+    this.gameStateUI.gameOverScreen.setScrollFactor(0);
 
     // 背景
     const background = this.add.rectangle(0, 0, 400, 300, 0x000000, 0.8);
@@ -991,9 +1073,7 @@ export class GameScene extends Scene {
 
   preload() {
     // for debug
-    const enemyCharachips = enemyUnitConfigs
-      .map((c) => c.charachip)
-      .filter(Boolean);
+    this.load.image('gradient', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==');
     for (const configs of enemyUnitConfigs) {
       const charachip = configs.charachip;
       const config = configs.charachipConfig || {
@@ -1026,6 +1106,9 @@ export class GameScene extends Scene {
     this.load.image("wafu", "/game-assets/tilemaps/wafu.png");
     this.load.image("shrine1", "/game-assets/tilemaps/shrine1.png");
     this.load.tilemapTiledJSON("map", "/game-assets/tilemaps/map02.json");
+
+    // UI用の和風ウィンドウ
+    this.load.image("wafu_window", "/game-assets/wafu_window.png");
 
     // Crystal
     this.load.image("crystal", "/game-assets/crystal.png");
@@ -1080,12 +1163,8 @@ export class GameScene extends Scene {
       this.frameTestSystem.setupManualControls(this.autoWaveSystem);
     }
 
-    // パフォーマンス監視UIを初期化
-    this.initializePerformanceUI();
-
     // ゲーム状態UIを初期化
     this.initializeGameStateUI();
-
     // 攻撃エフェクトイベントリスナーを設定
     this.setupAttackEffectListeners();
 

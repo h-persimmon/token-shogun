@@ -116,49 +116,50 @@ ${llmOutputSchema}
   }
 
   private formatGameStatusInfo(gameStatusInfo: GameStatusInfo): string {
-    const sections = [];
+//     const sections = [];
 
-    // 生存ユニット情報
-    if (gameStatusInfo.aliveUnitIds.length > 0) {
-      sections.push(`## 生存ユニット
-- ユニット数: ${gameStatusInfo.aliveUnitIds.length}体
-- ユニットID: ${gameStatusInfo.aliveUnitIds.join(', ')}`);
-    } else {
-      sections.push(`## 生存ユニット
-- 生存ユニットなし`);
-    }
+//     // 生存ユニット情報
+//     if (gameStatusInfo.aliveUnitIds.length > 0) {
+//       sections.push(`## 生存ユニット
+// - ユニット数: ${gameStatusInfo.aliveUnitIds.length}体
+// - ユニットID: ${gameStatusInfo.aliveUnitIds.join(', ')}`);
+//     } else {
+//       sections.push(`## 生存ユニット
+// - 生存ユニットなし`);
+//     }
 
-    // 死亡ユニット情報
-    if (gameStatusInfo.deadUnitIds.length > 0) {
-      sections.push(`## 死亡ユニット
-- 死亡ユニット数: ${gameStatusInfo.deadUnitIds.length}体
-- 死亡ユニットID: ${gameStatusInfo.deadUnitIds.join(', ')}`);
-    } else {
-      sections.push(`## 死亡ユニット
-- 死亡ユニットなし`);
-    }
+//     // 死亡ユニット情報
+//     if (gameStatusInfo.deadUnitIds.length > 0) {
+//       sections.push(`## 死亡ユニット
+// - 死亡ユニット数: ${gameStatusInfo.deadUnitIds.length}体
+// - 死亡ユニットID: ${gameStatusInfo.deadUnitIds.join(', ')}`);
+//     } else {
+//       sections.push(`## 死亡ユニット
+// - 死亡ユニットなし`);
+//     }
 
-    // 配置可能構造物情報
-    if (gameStatusInfo.deployableStructureIds.length > 0) {
-      sections.push(`## 配置可能構造物
-- 配置可能構造物数: ${gameStatusInfo.deployableStructureIds.length}個
-- 構造物ID: ${gameStatusInfo.deployableStructureIds.join(', ')}`);
-    } else {
-      sections.push(`## 配置可能構造物
-- 配置可能構造物なし`);
-    }
+//     // 配置可能構造物情報
+//     if (gameStatusInfo.deployableStructureIds.length > 0) {
+//       sections.push(`## 配置可能構造物
+// - 配置可能構造物数: ${gameStatusInfo.deployableStructureIds.length}個
+// - 構造物ID: ${gameStatusInfo.deployableStructureIds.join(', ')}`);
+//     } else {
+//       sections.push(`## 配置可能構造物
+// - 配置可能構造物なし`);
+//     }
 
-    // 生存敵タイプ情報
-    if (gameStatusInfo.aliveEnemyTypes.length > 0) {
-      sections.push(`## 生存敵タイプ
-- 敵タイプ数: ${gameStatusInfo.aliveEnemyTypes.length}種類
-- 敵タイプ: ${gameStatusInfo.aliveEnemyTypes.join(', ')}`);
-    } else {
-      sections.push(`## 生存敵タイプ
-- 生存敵なし`);
-    }
+//     // 生存敵タイプ情報
+//     if (gameStatusInfo.aliveEnemyTypes.length > 0) {
+//       sections.push(`## 生存敵タイプ
+// - 敵タイプ数: ${gameStatusInfo.aliveEnemyTypes.length}種類
+// - 敵タイプ: ${gameStatusInfo.aliveEnemyTypes.join(', ')}`);
+//     } else {
+//       sections.push(`## 生存敵タイプ
+// - 生存敵なし`);
+//     }
 
-    return sections.join('\n\n');
+//     return sections.join('\n\n');
+    return JSON.stringify(gameStatusInfo)
   }
 
   public async parseResponse(responseText: string): Promise<OrderV2PostResponseBody> {

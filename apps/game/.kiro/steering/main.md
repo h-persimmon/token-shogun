@@ -1,30 +1,31 @@
-# エージェントとしての大原則
- * チャットの会話は日本語で行うようにしてください
- * `npm i`などの環境構築を自身で実施しないようにしてくだい（他の方法を考えるようにしてください）
+# Agent's Core Principles
+* Please conduct chat conversations in English
+* Please avoid implementing environment setup like `pnpm i` yourself (please consider alternative methods)
 
-# アーキテクチャ構成
-このレポジトリは、ECSアーキテクチャで構成されたreal-time strategy ゲームです。
+# Architecture Configuration
+This repository is a real-time strategy game built with ECS (Entity-Component-System) architecture.
 
- * 構成Component
-   * TargetComponent: Entityが向かう先（Target）を指定します。
-   * MovementComponent: phaser-navmeshを利用した移動先の解決を行います。
-   * StructureComponent: 味方の城や大砲等の施設を管理します。
-   * HealthComponent: 体力を管理します
-   * AttackComponent: 攻撃動作を管理します
-   * PositionComponent: ユニットの位置を管理します
- * 構成System
-   * TargetingSystem: Entityの目標を管理します
-   * MovementSystem: 移動を実行します
-   * AttackSystem: 攻撃を実行します
-   * EnemySystem: 敵の登場を管理します
-   * GameStateSystem: ゲームの開始・終了判定を行います 
- * その他のモジュール
-   * ObjectPool: 計算効率良くEntityやComponentを管理します
+* Component Configuration
+  * TargetComponent: Specifies the destination (Target) for an Entity
+  * MovementComponent: Resolves movement destinations using phaser-navmesh
+  * StructureComponent: Manages allied structures such as castles and cannons
+  * HealthComponent: Manages health points
+  * AttackComponent: Manages attack actions
+  * PositionComponent: Manages unit positions
 
-# 使用フレームワーク
+* System Configuration
+  * TargetingSystem: Manages Entity objectives
+  * MovementSystem: Executes movement
+  * AttackSystem: Executes attacks
+  * EnemySystem: Manages enemy appearances
+  * GameStateSystem: Handles game start/end conditions
 
- * next.js: 15.5.0
- * phaser.js: ^3.90.0
+* Other Modules
+  * ObjectPool: Efficiently manages Entities and Components for computational performance
 
-# MCPサーバーについて
-lsmcpを積極的に使用するようにしてください。
+# Used Frameworks
+* next.js: 15.5.0
+* phaser.js: ^3.90.0
+
+# GitHub Repository Name
+h-persimmon/kiro-sample-004

@@ -1,3 +1,4 @@
+import type Phaser from "phaser";
 import { createObjectPool, type Poolable } from "../entities/object-pool";
 import type { AttackType } from "./attack-component";
 import type { Component } from "./types";

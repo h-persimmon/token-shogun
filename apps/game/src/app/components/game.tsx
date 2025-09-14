@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GameScene } from "../../lib/game/scene/rts-scene";
 import { OrderListener } from "../../lib/game/order-listner";
-import { useChannelMessagingReceiver } from "@/lib/hooks/use-channel-messaging-receiver";
+import { useChannelMessagingReceiver } from "../../lib/hooks/use-channel-messaging-receiver";
 
 // Next.js Page Component
 interface GameProps {

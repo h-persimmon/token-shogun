@@ -8,12 +8,16 @@ export type TargetComponent = Component<
   {
     targetEntityId?: string;
     // 優先攻撃的タイプ
-    enemyTypeByOrder?: string; 
+    enemyTypeByOrder?: string;
     targetPosition?: Point;
     targetType: "entity" | "position" | "none";
     priority: number; // 0-10, 高いほど優先
     // 特殊なターゲット状態を示すフラグ
     specialMission?: "defense" | "deployment"; // 拠点守備または砲台配置のミッション中
+    // Target switching state management fields
+    originalTargetId?: string; // Store original target for potential reversion
+    switchReason?: "attack" | "proximity" | "threat"; // Reason for target switch
+    canSwitchTarget?: boolean; // Flag to prevent rapid switching
   }
 >;
 
@@ -85,15 +89,13 @@ export const setPriorityAttackTarget = (
 // 特殊ミッション（拠点防衛や砲台配置）の設定
 export const setSpecialMission = (
   target: TargetComponent,
-  missionType: "defense" | "deployment" | undefined
+  missionType: "defense" | "deployment" | undefined,
 ): void => {
   target.specialMission = missionType;
 };
 
 // 特殊ミッションをクリア
-export const clearSpecialMission = (
-  target: TargetComponent
-): void => {
+export const clearSpecialMission = (target: TargetComponent): void => {
   target.specialMission = undefined;
 };
 
@@ -111,4 +113,104 @@ export const evaluateTargetPriority = (
   const priorityScore = target.priority / 10;
 
   return distanceScore * priorityScore;
+};
+
+// Target switching state management functions
+
+/**
+ * Store the original target before switching to a new target
+ */
+export const storeOriginalTarget = (
+  target: TargetComponent,
+  reason: "attack" | "proximity" | "threat",
+): void => {
+  // Only store if we don't already have an original target stored
+  if (!target.originalTargetId && target.targetEntityId) {
+    target.originalTargetId = target.targetEntityId;
+  }
+  target.switchReason = reason;
+};
+
+/**
+ * Restore the original target if it exists
+ */
+export const restoreOriginalTarget = (target: TargetComponent): boolean => {
+  if (target.originalTargetId) {
+    target.targetEntityId = target.originalTargetId;
+    target.targetType = "entity";
+    target.originalTargetId = undefined;
+    target.switchReason = undefined;
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Clear target switching state
+ */
+export const clearTargetSwitchingState = (target: TargetComponent): void => {
+  target.originalTargetId = undefined;
+  target.switchReason = undefined;
+  target.canSwitchTarget = undefined;
+};
+
+/**
+ * Check if the target has switched from its original target
+ */
+export const hasTargetSwitched = (target: TargetComponent): boolean => {
+  return target.originalTargetId !== undefined;
+};
+
+/**
+ * Set target switching capability flag
+ */
+export const setCanSwitchTarget = (
+  target: TargetComponent,
+  canSwitch: boolean,
+): void => {
+  target.canSwitchTarget = canSwitch;
+};
+
+/**
+ * Check if target switching is allowed
+ */
+export const canSwitchTargets = (target: TargetComponent): boolean => {
+  return target.canSwitchTarget !== false; // Default to true if not set
+};
+
+/**
+ * Switch to a new target while preserving original target information
+ */
+export const switchToNewTarget = (
+  target: TargetComponent,
+  newTargetId: string,
+  reason: "attack" | "proximity" | "threat",
+  priority?: number,
+): void => {
+  // Store original target if this is the first switch
+  storeOriginalTarget(target, reason);
+
+  // Set new target
+  setEntityTarget(target, newTargetId, priority);
+
+  // Update switch reason
+  target.switchReason = reason;
+};
+
+/**
+ * Get the current switch reason
+ */
+export const getSwitchReason = (
+  target: TargetComponent,
+): "attack" | "proximity" | "threat" | undefined => {
+  return target.switchReason;
+};
+
+/**
+ * Get the original target ID
+ */
+export const getOriginalTargetId = (
+  target: TargetComponent,
+): string | undefined => {
+  return target.originalTargetId;
 };

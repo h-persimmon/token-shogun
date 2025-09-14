@@ -307,7 +307,13 @@ export class AttackSystem {
     // 基本ダメージを取得
     const damage = attackComponent.damage;
 
+    // Record damage source for target switching evaluation
     recordDamageSource(targetHealth, attackerEntity.id, time);
+
+    // Log damage source recording for target switching debugging
+    console.log(
+      `🎯 Target Switching: Recorded damage source - Attacker: ${attackerEntity.id}, Target: ${targetEntity.id}, Time: ${time}, Damage: ${damage}`,
+    );
 
     // 実際に与えるダメージを計算（現在の体力を超えないように）
     const actualDamage = Math.min(damage, targetHealth.currentHealth);
@@ -1091,6 +1097,11 @@ export class AttackSystem {
       currentTime,
     );
 
+    // Log damage source recording for target switching debugging
+    console.log(
+      `🎯 Target Switching: Recorded projectile damage source - Attacker: ${projectileComponent.attackerId}, Target: ${targetEntity.id}, Time: ${currentTime}, Damage: ${damage}`,
+    );
+
     // ダメージを適用（必中なので修正なし）
     this.applyDamage(targetEntity, damage);
 
@@ -1289,6 +1300,11 @@ export class AttackSystem {
       // 攻撃履歴を記録（タイムスタンプと攻撃者IDを確実に記録）
       const currentTime = Date.now();
       recordDamageSource(enemyHealth, _attackerId, currentTime);
+
+      // Log damage source recording for target switching debugging
+      console.log(
+        `🎯 Target Switching: Recorded explosion damage source - Attacker: ${_attackerId}, Target: ${enemy.id}, Time: ${currentTime}, Damage: ${finalDamage}`,
+      );
 
       // ダメージを適用
       this.applyDamage(enemy, finalDamage);

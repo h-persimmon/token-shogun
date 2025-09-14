@@ -84,15 +84,18 @@ importers:
       vite:
         specifier: ^7.1.4
         version: 7.1.4(@types/node@20.19.13)
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@20.19.13)
 
   apps/platform:
     dependencies:
       '@anthropic-ai/tokenizer':
         specifier: ^0.0.4
         version: 0.0.4
-      '@kiro-rts/game':
+      '@kiro-rts/vibe-strategy':
         specifier: workspace:*
-        version: link:../game
+        version: link:../../packages/vibe-strategy
       '@prisma/client':
         specifier: ^6.14.0
         version: 6.15.0(prisma@6.15.0)(typescript@5.9.2)
@@ -169,7 +172,7 @@ importers:
         version: 5.9.2
       vitest:
         specifier: ^3.2.4
-        version: 3.2.4
+        version: 3.2.4(@types/node@20.19.13)
 
 packages:
 
@@ -3742,6 +3745,7 @@ packages:
   /ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
+    requiresBuild: true
 
   /ansi-regex@6.2.0:
     resolution: {integrity: sha512-TKY5pyBkHyADOPYlRT9Lx6F544mPl0vS5Ew7BJ45hA08Q+t3GjbueLliBWN3sMICk6+y7HdyxSzC4bWS8baBdg==}
@@ -4372,6 +4376,7 @@ packages:
 
   /emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
+    requiresBuild: true
 
   /emoji-regex@9.2.2:
     resolution: {integrity: sha512-L18DaJsXSUk2+42pv8mLs5jJT2hqFkFE4j21wOmgbUqsZ2hL72NsUU785g9RXgo3s0ZNgVl42TiHp3ZtOv/Vyg==}
@@ -5493,6 +5498,7 @@ packages:
   /is-fullwidth-code-point@3.0.0:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
     engines: {node: '>=8'}
+    requiresBuild: true
 
   /is-generator-function@1.1.0:
     resolution: {integrity: sha512-nPUB5km40q9e8UfN/Zc24eLlzdSf9OfKByBw9CIdw4H1giPMeA0OIJvbchsCu4npfI2QcMVBsGEBHKZ7wLTWmQ==}
@@ -7618,7 +7624,7 @@ packages:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
     dev: true
 
-  /vite-node@3.2.4:
+  /vite-node@3.2.4(@types/node@20.19.13):
     resolution: {integrity: sha512-EbKSKh+bh1E1IFxeO0pg1n4dvoOTt0UDiXMd/qn++r98+jPO1xtJilvXldeuQ8giIB5IkpjCgMleHMNEsGH6pg==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -7694,7 +7700,7 @@ packages:
       fsevents: 2.3.3
     dev: true
 
-  /vitest@3.2.4:
+  /vitest@3.2.4(@types/node@20.19.13):
     resolution: {integrity: sha512-LUCP5ev3GURDysTWiP47wRRUpLKMOfPh+yKTx3kVIEiu5KOMeqzpnYNsKyOoVrULivR8tLcks4+lga33Whn90A==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
@@ -7723,6 +7729,7 @@ packages:
         optional: true
     dependencies:
       '@types/chai': 5.2.2
+      '@types/node': 20.19.13
       '@vitest/expect': 3.2.4
       '@vitest/mocker': 3.2.4(vite@7.1.4)
       '@vitest/pretty-format': 3.2.4
@@ -7743,7 +7750,7 @@ packages:
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
       vite: 7.1.4(@types/node@20.19.13)
-      vite-node: 3.2.4
+      vite-node: 3.2.4(@types/node@20.19.13)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - jiti

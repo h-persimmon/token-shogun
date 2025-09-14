@@ -71,10 +71,10 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
 
   return (
     <div className="bg-white rounded-lg shadow-md h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-800">Game Command</h3>
       </div>
-      <div className="flex-1 p-4">
+      <div className="flex-1 p-3">
         <div className="flex flex-col h-full gap-3">
           <textarea
             value={prompt}
@@ -86,7 +86,7 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
             className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
           
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-end gap-2">
             <div className="flex gap-4 text-sm text-gray-600">
               <div className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>

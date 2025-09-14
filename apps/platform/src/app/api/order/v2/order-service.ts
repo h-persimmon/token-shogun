@@ -186,8 +186,18 @@ ${llmOutputSchema}
 
       // Handle both new LLMOutput format and old order format
       if (parsedObject.llmOutput && parsedObject.llmOutput.orders) {
-        // New format directly matches our interface
-        return parsedObject.llmOutput;
+        // New format: orders.order contains the array of orders
+        const ordersData = parsedObject.llmOutput.orders;
+        
+        // Handle case where orders.order is an array or single object
+        let orderArray = [];
+        if (ordersData.order) {
+          orderArray = Array.isArray(ordersData.order) ? ordersData.order : [ordersData.order];
+        }
+        
+        return {
+          orders: this.transformNewOrderFormat(orderArray)
+        };
       }
       else if (parsedObject.order) {
         // Old format - transform to new format
@@ -204,6 +214,41 @@ ${llmOutputSchema}
       // Return a minimal valid object as fallback
       return { orders: [] };
     }
+  }
+
+  private transformNewOrderFormat(orderArray: any[]): Order[] {
+    const orders: Order[] = [];
+
+    orderArray.forEach(orderObj => {
+      if (orderObj.attackTarget) {
+        orders.push({
+          type: "attackTarget",
+          entityId: orderObj.attackTarget.entityId,
+          targetEnemyTypeId: orderObj.attackTarget.targetEnemyTypeId
+        } as AttackTargetOrder);
+      }
+      else if (orderObj.deploymentTarget) {
+        orders.push({
+          type: "deploymentTarget",
+          entityId: orderObj.deploymentTarget.entityId,
+          targetStructureId: orderObj.deploymentTarget.targetStructureId
+        } as DeploymentTargetOrder);
+      }
+      else if (orderObj.defenseCrystal) {
+        orders.push({
+          type: "defenseCrystal",
+          entityId: orderObj.defenseCrystal.entityId
+        } as DefenseCrystalOrder);
+      }
+      else if (orderObj.reviveAllyUnit) {
+        orders.push({
+          type: "reviveAllyUnit",
+          entityId: orderObj.reviveAllyUnit.entityId
+        } as any); // Assuming ReviveAllyUnitOrder exists
+      }
+    });
+
+    return orders;
   }
 
   private transformOldOrderFormat(orderObj: any): Order[] {

@@ -7,16 +7,18 @@ import { OrderV2PostResponseBody } from "@/api-interface/order/v2/post-response-
 interface ChatFieldProps {
   getGameStatusInfo: () => Promise<GameStatusInfo | null>;
   sendOrder: (orders: Order[]) => void;
+  addChatMessage: (type: 'user' | 'ai', content: string) => void;
 }
 
 /**
  * チャット欄
  */
-export default function ChatField({ getGameStatusInfo, sendOrder }: ChatFieldProps) {
+export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage }: ChatFieldProps) {
   const [prompt, setPrompt] = useState("");
 
   const handleSendPrompt = async () => {
     console.log("送信ボタンが押された");
+    addChatMessage("user", prompt);
     const gameStatusInfo = await getGameStatusInfo();
     const url = "/api/order/v2";
     const orderRequestBody: OrderV2PostRequestBody = { prompt, gameStatusInfo };
@@ -25,7 +27,19 @@ export default function ChatField({ getGameStatusInfo, sendOrder }: ChatFieldPro
       body: JSON.stringify(orderRequestBody),
     });
     const responseBody: OrderV2PostResponseBody = await response.json()
-    sendOrder(responseBody.orders);
+    const orders = responseBody.orders;
+    sendOrder(orders);
+
+    addChatMessage("ai",
+      orders.map(order => {
+        const parts = [];
+        if (order.type) parts.push(`Type: ${order.type}`);
+        if ('entityId' in order && order.entityId) parts.push(`Entity ID: ${order.entityId}`);
+        if ('targetEnemyTypeId' in order && order.targetEnemyTypeId) parts.push(`Target Enemy: ${order.targetEnemyTypeId}`);
+        if ('targetStructureId' in order && order.targetStructureId) parts.push(`Target Structure: ${order.targetStructureId}`);
+        return parts.join(', ');
+      }).join('\n')
+    )
 
     setPrompt("");
   };

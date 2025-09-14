@@ -3,6 +3,8 @@ import type { GameStatusInfo } from "../../../../game/src/lib/game/order-listner
 import type { Order } from "@kiro-rts/vibe-strategy";
 import { OrderV2PostRequestBody } from "@/api-interface/order/v2/post-request-body";
 import { OrderV2PostResponseBody } from "@/api-interface/order/v2/post-response-body";
+import { TokensCountPostRequestBody } from "@/api-interface/tokens/count/post-request-body";
+import { TokensCountPostResponseBody } from "@/api-interface/tokens/count/post-response-body";
 
 interface ChatFieldProps {
   getGameStatusInfo: () => Promise<GameStatusInfo | null>;
@@ -15,13 +17,23 @@ interface ChatFieldProps {
  */
 export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage }: ChatFieldProps) {
   const [prompt, setPrompt] = useState("");
+  const [inputTokenCount, setInputTokenCount] = useState(0);
+  const [usedTokenCount, setUsedTokenCount] = useState(0);
 
   const handleSendPrompt = async () => {
     console.log("送信ボタンが押された");
-    addChatMessage("user", prompt);
+    const currentPrompt = prompt;
+    addChatMessage("user", currentPrompt);
+    setPrompt("");
+    setUsedTokenCount((usedTokenCount) => usedTokenCount + inputTokenCount)
+    setInputTokenCount(0)
+
     const gameStatusInfo = await getGameStatusInfo();
     const url = "/api/order/v2";
-    const orderRequestBody: OrderV2PostRequestBody = { prompt, gameStatusInfo };
+    const orderRequestBody: OrderV2PostRequestBody = { 
+      prompt: currentPrompt,
+      gameStatusInfo
+    };
     const response = await fetch(url, {
       method: "POST",
       body: JSON.stringify(orderRequestBody),
@@ -40,8 +52,21 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
         return parts.join(', ');
       }).join('\n')
     )
+  };
 
-    setPrompt("");
+  const countTokens = async (text: string) => {
+    try {
+      const url = "/api/tokens/count";
+      const requestBody: TokensCountPostRequestBody = { prompt: text };
+      const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify(requestBody),
+      });
+      const responseBody: TokensCountPostResponseBody = await response.json()
+      setInputTokenCount(responseBody.tokens)
+    } catch (error) {
+      console.error("トークンカウントエラー:", error);
+    }
   };
 
   return (
@@ -51,17 +76,14 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
           value={prompt}
           onChange={(e) => {
             setPrompt(e.target.value);
-            // countTokens(e.target.value);
+            countTokens(e.target.value);
           }}
           placeholder="Enter your prompt!"
           className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
 
-        {/* <p>入力のトークン数：{tokenCount}</p> */}
-        {/* <p>
-          使用可能トークン数：{gameEngine.tokenModule.remainingTokens} /{" "}
-          {gameEngine.stage.maxTokens}
-        </p> */}
+        <p>currentInputToken：{inputTokenCount}</p>
+        <p>usedToken：{usedTokenCount}</p>
 
         <button
           onClick={handleSendPrompt}

@@ -65,7 +65,9 @@ export class OrderService {
     console.log(aiResponse)
     const text = aiResponse.output.message.content[0].text
     console.log(text)
-    return this.parseResponse(text);
+    const response = await this.parseResponse(text);
+    console.log(response)
+    return response;
   }
 
   /**
@@ -114,20 +116,62 @@ ${llmOutputSchema}
   }
 
   private formatGameStatusInfo(gameStatusInfo: GameStatusInfo): string {
-    return String(gameStatusInfo);
+    const sections = [];
+
+    // 生存ユニット情報
+    if (gameStatusInfo.aliveUnitIds.length > 0) {
+      sections.push(`## 生存ユニット
+- ユニット数: ${gameStatusInfo.aliveUnitIds.length}体
+- ユニットID: ${gameStatusInfo.aliveUnitIds.join(', ')}`);
+    } else {
+      sections.push(`## 生存ユニット
+- 生存ユニットなし`);
+    }
+
+    // 死亡ユニット情報
+    if (gameStatusInfo.deadUnitIds.length > 0) {
+      sections.push(`## 死亡ユニット
+- 死亡ユニット数: ${gameStatusInfo.deadUnitIds.length}体
+- 死亡ユニットID: ${gameStatusInfo.deadUnitIds.join(', ')}`);
+    } else {
+      sections.push(`## 死亡ユニット
+- 死亡ユニットなし`);
+    }
+
+    // 配置可能構造物情報
+    if (gameStatusInfo.deployableStructureIds.length > 0) {
+      sections.push(`## 配置可能構造物
+- 配置可能構造物数: ${gameStatusInfo.deployableStructureIds.length}個
+- 構造物ID: ${gameStatusInfo.deployableStructureIds.join(', ')}`);
+    } else {
+      sections.push(`## 配置可能構造物
+- 配置可能構造物なし`);
+    }
+
+    // 生存敵タイプ情報
+    if (gameStatusInfo.aliveEnemyTypes.length > 0) {
+      sections.push(`## 生存敵タイプ
+- 敵タイプ数: ${gameStatusInfo.aliveEnemyTypes.length}種類
+- 敵タイプ: ${gameStatusInfo.aliveEnemyTypes.join(', ')}`);
+    } else {
+      sections.push(`## 生存敵タイプ
+- 生存敵なし`);
+    }
+
+    return sections.join('\n\n');
   }
 
   public async parseResponse(responseText: string): Promise<OrderV2PostResponseBody> {
     // Try to extract XML content from the response
-    const xmlMatch = responseText.match(/```xml\s*([\s\S]*?)\s*```/) || 
-                     responseText.match(/```\s*([\s\S]*?)\s*```/) || 
-                     [null, responseText.trim()];
-    
+    const xmlMatch = responseText.match(/```xml\s*([\s\S]*?)\s*```/) ||
+      responseText.match(/```\s*([\s\S]*?)\s*```/) ||
+      [null, responseText.trim()];
+
     let xmlContent = xmlMatch[1] || responseText;
-    
+
     // Remove any commentary before or after the actual XML
     xmlContent = xmlContent.replace(/^[^<]+/, '').replace(/[^>]+$/, '');
-    
+
     try {
       // Validate the XML
       const isValid = XMLValidator.validate(xmlContent);
@@ -136,21 +180,21 @@ ${llmOutputSchema}
         // Return a minimal valid object as fallback
         return { orders: [] };
       }
-      
+
       // Parse XML to object
       const parsedObject = this.xmlParser.parse(xmlContent);
-      
+
       // Handle both new LLMOutput format and old order format
       if (parsedObject.llmOutput && parsedObject.llmOutput.orders) {
         // New format directly matches our interface
         return parsedObject.llmOutput;
-      } 
+      }
       else if (parsedObject.order) {
         // Old format - transform to new format
         return {
           orders: this.transformOldOrderFormat(parsedObject.order)
         };
-      } 
+      }
       else {
         console.error("XML structure doesn't match expected format");
         return { orders: [] };
@@ -164,7 +208,7 @@ ${llmOutputSchema}
 
   private transformOldOrderFormat(orderObj: any): Order[] {
     const orders: Order[] = [];
-    
+
     // Process target orders
     if (orderObj.target) {
       if (orderObj.target.enemy && orderObj.target.enemy.id) {
@@ -174,7 +218,7 @@ ${llmOutputSchema}
           targetEnemyTypeId: orderObj.target.enemy.id
         } as AttackTargetOrder);
       }
-      
+
       if (orderObj.target.structure && orderObj.target.structure.id) {
         orders.push({
           type: "deploymentTarget",
@@ -183,12 +227,12 @@ ${llmOutputSchema}
         } as DeploymentTargetOrder);
       }
     }
-    
+
     // Process create orders (simplified)
     if (orderObj.create && orderObj.create.unit) {
-      const units = Array.isArray(orderObj.create.unit) ? 
+      const units = Array.isArray(orderObj.create.unit) ?
         orderObj.create.unit : [orderObj.create.unit];
-      
+
       units.forEach(unit => {
         if (unit.unitTypeId) {
           // This is a simplification, in a real system you'd map
@@ -200,7 +244,7 @@ ${llmOutputSchema}
         }
       });
     }
-    
+
     return orders;
   }
 }

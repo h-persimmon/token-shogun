@@ -178,9 +178,7 @@ export const OrderButtonComponent = ({ sendOrder, getGameStatusInfo }: Pick<Retu
               onChange={(e) => setEntityId(e.target.value)}
               disabled={!gameStatus?.aliveUnitIds.length}
             >
-              {!gameStatus?.aliveUnitIds.length && (
-                <option value="">No alive units</option>
-              )}
+              <option value="">-</option>
               {gameStatus?.aliveUnitIds.map(id => (
                 <option key={id} value={id}>{id}</option>
               ))}
@@ -200,9 +198,7 @@ export const OrderButtonComponent = ({ sendOrder, getGameStatusInfo }: Pick<Retu
             onChange={(e) => setTargetEnemyTypeId(e.target.value)}
             disabled={!gameStatus?.aliveEnemyTypes.length}
           >
-            {!gameStatus?.aliveEnemyTypes.length && (
-              <option value="">No enemies</option>
-            )}
+            <option value="">-</option>
             {gameStatus?.aliveEnemyTypes.map(type => (
               <option key={type} value={type}>{type}</option>
             ))}
@@ -225,9 +221,7 @@ export const OrderButtonComponent = ({ sendOrder, getGameStatusInfo }: Pick<Retu
             onChange={(e) => setTargetStructureId(e.target.value)}
             disabled={!gameStatus?.deployableStructureIds.length}
           >
-            {!gameStatus?.deployableStructureIds.length && (
-              <option value="">No structures</option>
-            )}
+            <option value="">-</option>
             {gameStatus?.deployableStructureIds.map(id => (
               <option key={id} value={id}>{id}</option>
             ))}
@@ -246,9 +240,7 @@ export const OrderButtonComponent = ({ sendOrder, getGameStatusInfo }: Pick<Retu
             onChange={(e) => setEntityToReviveId(e.target.value)}
             disabled={!gameStatus?.deadUnitIds.length}
           >
-            {!gameStatus?.deadUnitIds.length && (
-              <option value="">No dead units</option>
-            )}
+            <option value="">-</option>
             {gameStatus?.deadUnitIds.map(id => (
               <option key={id} value={id}>{id}</option>
             ))}

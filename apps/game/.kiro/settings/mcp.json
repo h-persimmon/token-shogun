@@ -44,7 +44,10 @@
         "list_issues",
         "get_issue",
         "search_repositories",
-        "create_pull_request"
+        "create_pull_request",
+        "create_branch",
+        "push_files",
+        "get_file_contents"
       ]
     }
   }

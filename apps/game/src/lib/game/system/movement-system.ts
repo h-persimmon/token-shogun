@@ -141,12 +141,6 @@ export class MovementSystem {
     const dx = currentTarget.x - currentPos.x;
     const dy = currentTarget.y - currentPos.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    // 目標点に十分近い場合、次のパス点に進む
-    if (distance < 5) {
-      // 5ピクセル以内なら到達とみなす
-      advancePathIndex(movementComponent);
-      return;
-    }
 
     // 移動量を計算（デルタ時間を考慮）
     const speed = movementComponent.speed;

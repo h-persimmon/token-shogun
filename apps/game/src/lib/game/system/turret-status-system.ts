@@ -159,10 +159,6 @@ export class TurretStatusSystem {
     if (isInUse) {
       statusText.setText("In Use");
       statusText.setColor(this.config.inUseColor);
-      
-      // 座席番号を表示（要件に従って1に設定）
-      const seatNumber = 1;
-      statusText.setText(`In Use (${seatNumber})`);
     } else {
       statusText.setText("Available");
       statusText.setColor(this.config.availableColor);

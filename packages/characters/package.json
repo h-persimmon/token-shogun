@@ -1,0 +1,12 @@
+{
+  "name": "@kiro-rts/characters",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "copy-assets": "cp -r ./charachips ../../apps/platform/public && cp -r ./charachips ../../apps/game/public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

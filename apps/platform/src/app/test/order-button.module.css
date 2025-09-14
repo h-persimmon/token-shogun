@@ -1,0 +1,170 @@
+.orderButtonContainer {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border: 1px solid #444;
+  padding: 15px;
+  border-radius: 5px;
+  color: white;
+  z-index: 1000;
+  min-width: 220px;
+}
+
+.orderButtonContainer h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #fff;
+}
+
+.inputGroup {
+  margin-bottom: 10px;
+}
+
+.inputGroup label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.inputGroup input, 
+.inputGroup select {
+  width: 100%;
+  padding: 5px;
+  background-color: #222;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 3px;
+}
+
+.orderTypeSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.orderTypeSelector label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.disabledOption {
+  color: #888;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.disabledOption span {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-left: 5px;
+  font-style: italic;
+}
+
+.sendOrderButton {
+  background-color: #4a7dff;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+}
+
+.sendOrderButton:hover {
+  background-color: #3a6aff;
+}
+
+.sendOrderButton:active {
+  background-color: #2a5aee;
+}
+
+/* Debug button styles */
+.debugSection {
+  margin-top: 20px;
+  border-top: 1px solid #444;
+  padding-top: 15px;
+}
+
+.debugButton {
+  background-color: #555;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.debugButton:hover {
+  background-color: #666;
+}
+
+.debugButton.active {
+  background-color: #8bc34a;
+}
+
+.debugButton.active:hover {
+  background-color: #7cb342;
+}
+
+.gameStatusDisplay {
+  background-color: rgba(30, 30, 30, 0.9);
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.gameStatusDisplay h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #8bc34a;
+}
+
+.statusSection {
+  margin-bottom: 15px;
+}
+
+.statusSection h5 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #bbb;
+}
+
+.statusSection ul {
+  list-style: none;
+  padding-left: 10px;
+  margin: 0;
+  font-size: 12px;
+  color: #ddd;
+}
+
+.statusSection li {
+  padding: 2px 0;
+}
+
+.noOptionsWarning {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin: 5px 0 0;
+  font-style: italic;
+}
+
+/* Disabled button styles */
+.sendOrderButton:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+

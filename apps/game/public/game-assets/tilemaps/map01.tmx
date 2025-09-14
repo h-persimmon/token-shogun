@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="1">
+ <tileset firstgid="1" name="tiles" tilewidth="25" tileheight="25" tilecount="640" columns="10">
+  <image source="tiles.png" width="256" height="1600"/>
+  <tile id="0">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="true"/>
+   </properties>
+  </tile>
+  <tile id="1">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="true"/>
+   </properties>
+  </tile>
+  <tile id="2">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="true"/>
+   </properties>
+  </tile>
+  <tile id="3">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="true"/>
+   </properties>
+  </tile>
+  <tile id="4">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="true"/>
+   </properties>
+  </tile>
+  <tile id="5">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="true"/>
+   </properties>
+  </tile>
+  <tile id="6">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="true"/>
+   </properties>
+  </tile>
+  <tile id="7">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+   <objectgroup draworder="index">
+    <object id="1" x="8" y="8" width="10" height="10"/>
+   </objectgroup>
+  </tile>
+  <tile id="8">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="9">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="10">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="11">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="12">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="13">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="14">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="15">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="16">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="17">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="18">
+   <properties>
+    <property name="collides" type="bool" value="false"/>
+   </properties>
+  </tile>
+  <tile id="19">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="20">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="21">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="22">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="23">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="24">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="25">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="26">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+    <property name="isOpaque" value="false"/>
+   </properties>
+  </tile>
+  <tile id="27">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="28">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="29">
+   <properties>
+    <property name="collides" type="bool" value="true"/>
+   </properties>
+  </tile>
+ </tileset>
+ <tileset firstgid="641" source="./castle.tsx"/>
+ <layer id="1" name="bg" width="30" height="20">
+  <data encoding="csv">
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,650,650,650,650,650,650,650,650,650,650,650,650,650,650,650,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,
+641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641,641
+</data>
+ </layer>
+ <layer id="2" name="walls" width="30" height="20">
+  <data encoding="csv">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,675,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,675,
+0,774,775,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,675,
+0,782,783,0,0,774,775,0,0,774,775,0,0,774,775,0,0,0,0,0,0,0,0,0,0,0,0,0,0,675,
+0,790,791,774,775,782,783,774,775,782,783,774,775,782,783,0,657,658,658,658,658,658,658,658,658,658,658,658,658,683,
+0,0,0,782,783,790,791,782,783,790,791,782,783,790,791,0,665,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,790,791,0,0,790,791,0,0,790,791,0,0,0,665,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,665,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,774,775,0,0,774,775,0,0,774,775,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,782,783,774,775,782,783,774,775,782,783,774,775,0,673,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,774,775,790,791,782,783,790,791,782,783,790,791,782,783,0,673,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,782,783,0,0,790,791,0,0,790,791,0,0,790,791,0,673,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,790,791,0,0,0,0,0,0,0,0,0,0,0,0,0,681,658,658,658,658,658,658,658,658,658,658,658,658,659,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,667,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,667,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,667,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,667
+</data>
+ </layer>
+</map>

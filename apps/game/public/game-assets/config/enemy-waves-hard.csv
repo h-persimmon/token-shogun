@@ -1,0 +1,14 @@
+waveNumber,enemyType,count,spawnInterval,spawnDelay,spawnX,spawnY,structureTargetPriority
+1,basic,10,800,0,3,8,gate
+1,basic,8,800,0,3,9,gate
+1,fast,5,1200,2000,4,8,gate
+2,basic,15,600,0,3,8,gate
+2,basic,12,600,0,3,9,gate
+2,fast,8,1000,1500,4,8,gate
+2,heavy,2,4000,5000,4,9,gate
+3,basic,20,500,0,3,8,gate
+3,basic,18,500,0,3,9,gate
+3,fast,12,800,1000,4,8,gate
+3,fast,10,800,1000,4,9,gate
+3,heavy,4,3000,3000,5,8,gate
+3,heavy,3,3000,3000,5,9,gate

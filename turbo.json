@@ -1,0 +1,20 @@
+{
+  "tasks": {
+    "copy-assets": {
+      "inputs": ["./apps/game/public/**"],
+      "outputs": ["./apps/platform/public/**"]
+    },
+    "dev": {
+      "dependsOn": ["copy-assets"],
+      "persistent": true
+    },
+    "start": {
+      "dependsOn": ["copy-assets"],
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": ["copy-assets"],
+      "outputs": ["dist/**", ".next/**"]
+    }
+  }
+}

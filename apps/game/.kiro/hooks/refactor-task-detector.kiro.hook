@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Refactor Task Detector",
+  "description": "Analyzes code changes to identify up to 3 refactoring tasks and outputs them to .kiro/*/refactor.md",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      ".kiro/specs/*/tasks.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Please see Git Diff!!!\n\nAnalyze the current codebase implementation and identify up to 3 refactoring tasks that would improve code quality, maintainability, or performance. Focus on common issues like duplicate code, complex functions, poor separation of concerns, or architectural improvements. Output the results to .kiro/refactor.md in the following format:\n\n\n\"\"\"\n- [ ] Extract common validation logic into utility function\n  - Move duplicate input validation code from UserService and AdminService\n  - Create ValidationUtils.validateEmail() and ValidationUtils.validatePassword()\n  - Update both services to use the new utility functions\n- [ ] Consolidate database connection handling\n  - Replace scattered connection creation with centralized ConnectionManager\n  - Implement connection pooling and proper error handling\n  - Update all repository classes to use the new connection manager\n- [ ] Refactor component state management\n  - Extract complex state logic from UserProfile component into custom hook\n  - Create useUserProfile hook to handle user data fetching and updates\n  - Simplify component by removing direct state management code\n\"\"\"\n\nEach task should include:\n- A clear, actionable title\n- 2-3 specific implementation steps\n- Focus on realistic improvements based on the current ECS game architecture"
+  }
+}

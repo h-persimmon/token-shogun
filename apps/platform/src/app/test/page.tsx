@@ -330,7 +330,7 @@ export default function TestPage() {
       <iframe
         ref={iframeRef}
         style={{ width: '800px', height: '600px', border: '1px solid #ccc' }}
-        src={process.env.GAME_URL || "http://localhost:4000"}
+        src={process.env.NEXT_PUBLIC_GAME_URL || "http://localhost:4000"}
         sandbox="allow-scripts allow-same-origin"
       />
       <OrderButtonComponent sendOrder={sendOrder} getGameStatusInfo={getGameStatusInfo} />

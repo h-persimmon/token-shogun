@@ -24,8 +24,8 @@ export default function Game({ csvFilePath }: GameProps) {
     if (!isMounted) return;
     const gameConfig: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      width: 32 * 30,
-      height: 600,
+      width: 32 * 32,
+      height: 500,
       backgroundColor: "#2E2E2E",
       scene: new GameScene({ csvFilePath }, orderListenerRef.current),
       physics: {

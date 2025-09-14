@@ -15,7 +15,7 @@ interface LogFieldProps {
 export default function LogField({ messages }: LogFieldProps) {
   return (
     <div className="bg-white rounded-lg shadow-md h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-800">Chat Log</h3>
       </div>
       <div className="flex-1 overflow-y-auto p-4">

@@ -110,7 +110,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(artilleryCannon1.id, artilleryCannon1Structure);
 
   // 砲台攻撃用のAttackComponentを作成
-  const artilleryAttack1 = createAttackComponent(50, 150, 3.0); // 高威力、長射程、長クールダウン
+  const artilleryAttack1 = createAttackComponent(50, 7 * 48, 3.0); // 高威力、長射程、長クールダウン
   artilleryAttack1.attackType = "artillery";
   artilleryAttack1.projectileSpeed = 200; // 弾丸速度
   artilleryAttack1.explosionRadius = 60; // 爆発範囲
@@ -133,7 +133,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   (artilleryCannon2Structure as any).structureType = "artillery_cannon";
   entityManager.addComponent(artilleryCannon2.id, artilleryCannon2Structure);
 
-  const artilleryAttack2 = createAttackComponent(50, 150, 3.0);
+  const artilleryAttack2 = createAttackComponent(50, 7 * 48, 3.0);
   artilleryAttack2.attackType = "artillery";
   artilleryAttack2.projectileSpeed = 200;
   artilleryAttack2.explosionRadius = 60;
@@ -155,7 +155,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(archerTower1.id, archerTower1Structure);
 
   // 弓矢攻撃用のAttackComponentを作成
-  const homingAttack1 = createAttackComponent(25, 300, 1.2); // 中威力、中射程、短クールダウン
+  const homingAttack1 = createAttackComponent(25, 10 * 48, 1.2); // 中威力、中射程、短クールダウン
   homingAttack1.attackType = "homing";
   homingAttack1.projectileSpeed = 300; // 高速弾丸
   homingAttack1.projectileSprite = "arrow";
@@ -178,7 +178,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   (archerTower2Structure as any).structureType = "archer_tower";
   entityManager.addComponent(archerTower2.id, archerTower2Structure);
 
-  const homingAttack2 = createAttackComponent(25, 300, 1.2);
+  const homingAttack2 = createAttackComponent(25, 10 * 48, 1.2);
   homingAttack2.attackType = "homing";
   homingAttack2.projectileSpeed = 300;
   homingAttack2.projectileSprite = "arrow";
@@ -195,7 +195,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(cannoneer1.id, createHealthComponent(60));
 
   // 砲手は直接攻撃（砲台に配備されると砲台の攻撃を使用）
-  const cannonneerAttack1 = createAttackComponent(15, 200, 1.0, "direct");
+  const cannonneerAttack1 = createAttackComponent(15, 48, 1.0, "direct");
   entityManager.addComponent(cannoneer1.id, cannonneerAttack1);
 
   entityManager.addComponent(
@@ -210,7 +210,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(cannoneer2.id, createPositionComponent(23, 13));
   entityManager.addComponent(cannoneer2.id, createHealthComponent(60));
 
-  const cannonneerAttack2 = createAttackComponent(15, 200, 1.0);
+  const cannonneerAttack2 = createAttackComponent(15, 48, 1.0);
   cannonneerAttack2.attackType = "direct";
   entityManager.addComponent(cannoneer2.id, cannonneerAttack2);
 

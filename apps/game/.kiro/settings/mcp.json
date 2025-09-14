@@ -23,7 +23,9 @@
         "list_dir",
         "find_symbol",
         "write_memory",
-        "write_memory"
+        "write_memory",
+        "search_for_pattern",
+        "think_about_collected_information"
       ]
     }
   }

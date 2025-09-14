@@ -514,10 +514,6 @@ export class AttackSystem {
     // 攻撃エフェクトを作成（Phaserシーンが必要）
     this.createAttackLine(attackerPos, targetPos, config);
     this.createImpactEffect(targetPos, config);
-
-    console.log(
-      `Attack effect: ${config.type} from (${attackerPos.point.x}, ${attackerPos.point.y}) to (${targetPos.point.x}, ${targetPos.point.y})`,
-    );
   }
 
   /**

@@ -35,6 +35,7 @@ import { MapBoundsCalculator } from "../system/map-bounds-calculator";
 import { MovementSystem } from "../system/movement-system";
 import { TargetingSystem } from "../system/targeting-system";
 import { spriteSheetNumber } from "../ui/sprite/character-chip";
+import { UnitInfoPopupSystem } from "../ui/unit-info/unit-info-popup-system";
 
 export class GameScene extends Scene {
   private entityManager?: ReturnType<typeof createEntityManager>;
@@ -52,6 +53,7 @@ export class GameScene extends Scene {
   private autoWaveSystem?: AutoWaveSystem;
   private frameTestSystem?: FrameTestSystem;
   private cameraControlSystem?: CameraControlSystem;
+  private unitInfoPopupSystem?: UnitInfoPopupSystem;
   private csvFilePath?: string;
   private orderListener?: OrderListener;
 
@@ -110,6 +112,8 @@ export class GameScene extends Scene {
     super({ key: "GameScene" });
     this.csvFilePath = config?.csvFilePath;
     this.orderListener = orderListener || new OrderListener();
+
+    window.scene = this;
   }
 
   /**
@@ -195,6 +199,12 @@ export class GameScene extends Scene {
     // DeploymentSystemを初期化
     this.deploymentSystem = new DeploymentSystem(this.entityManager);
 
+    // UnitInfoPopupSystemを初期化
+    this.unitInfoPopupSystem = new UnitInfoPopupSystem(
+      this,
+      this.entityManager,
+    );
+
     // InteractionSystemを初期化
     const interactionCallbacks = {
       onStructureClicked: (structureId: string) => {
@@ -211,6 +221,12 @@ export class GameScene extends Scene {
         reason: string,
       ) => {
         console.log(`Deployment failed: ${reason}`);
+      },
+      onUnitClicked: (unitId: string) => {
+        console.log(`Unit clicked: ${unitId}`);
+        if (this.unitInfoPopupSystem) {
+          this.unitInfoPopupSystem.showUnitInfo(unitId);
+        }
       },
     };
     this.interactionSystem = new InteractionSystem(
@@ -762,6 +778,11 @@ export class GameScene extends Scene {
     if (this.frameTestSystem) {
       this.frameTestSystem.destroy();
     }
+
+    // ユニット情報ポップアップシステムをクリーンアップ
+    if (this.unitInfoPopupSystem) {
+      this.unitInfoPopupSystem.destroy();
+    }
   }
 
   /**
@@ -847,6 +868,9 @@ export class GameScene extends Scene {
     // クリックイベントを再設定
     this.setupMovementControls();
 
+    // 背景クリック時のポップアップ非表示機能を再設定
+    this.setupBackgroundClickHandler();
+
     // HealthBarSystemを再初期化
     this.healthBarSystem = new HealthBarSystem(this.entityManager, this, {
       showOnlyWhenDamaged: true,
@@ -876,6 +900,12 @@ export class GameScene extends Scene {
     if (this.frameTestSystem) {
       this.frameTestSystem.setupManualControls(this.autoWaveSystem);
     }
+
+    // UnitInfoPopupSystemを再初期化
+    this.unitInfoPopupSystem = new UnitInfoPopupSystem(
+      this,
+      this.entityManager,
+    );
 
     console.log("Game reinitialized successfully");
   }
@@ -1051,28 +1081,14 @@ export class GameScene extends Scene {
     const tileset2 = tilemap.addTilesetImage("shrine1", "shrine1", 48, 48)!;
     const tileset3 = tilemap.addTilesetImage("basic", "basic", 48, 48)!;
 
-    tilemap.createLayer("ground", [
-      tileset1, tileset2, tileset3
-    ]);
-    tilemap.createLayer("building", [
-      tileset1, tileset2, tileset3
-    ]);
-    tilemap.createLayer("building2", [
-      tileset1, tileset2, tileset3
-    ]);
+    tilemap.createLayer("ground", [tileset1, tileset2, tileset3]);
+    tilemap.createLayer("building", [tileset1, tileset2, tileset3]);
+    tilemap.createLayer("building2", [tileset1, tileset2, tileset3]);
 
     // Load the navMesh from the tilemap object layer "navmesh" (created in Tiled). The navMesh was
     // created with 12.5 pixels of space around obstacles.
     const objectLayer = tilemap.getObjectLayer("navmesh");
     const navMesh = this.navMeshPlugin.buildMeshFromTiled("mesh", objectLayer);
-
-    // タイトルテキスト
-    this.add
-      .text(400, 50, "Next.js + Phaser ECS Game", {
-        fontSize: "24px",
-        color: "#ffffff",
-      })
-      .setOrigin(0.5);
 
     // Entity Manager をセットアップ（example.tsのセットアップを利用）
     this.entityManager = setupEntityManager(this);
@@ -1089,6 +1105,9 @@ export class GameScene extends Scene {
 
     // 右クリックで移動命令を設定
     this.setupMovementControls();
+
+    // 背景クリック時のポップアップ非表示機能を設定
+    this.setupBackgroundClickHandler();
 
     // FrameTestSystemのマニュアルコントロールを設定
     if (this.frameTestSystem) {
@@ -1171,6 +1190,39 @@ export class GameScene extends Scene {
         });
       }
     });
+  }
+
+  private setupBackgroundClickHandler(): void {
+    // 背景クリック時のポップアップ非表示機能
+    this.input.on(
+      "pointerdown",
+      (
+        pointer: Phaser.Input.Pointer,
+        currentlyOver: Phaser.GameObjects.GameObject[],
+      ) => {
+        try {
+          // 左クリックの場合のみ処理
+          if (pointer.leftButtonDown()) {
+            // クリックされたオブジェクトがない場合（背景クリック）
+            if (currentlyOver.length === 0) {
+              console.log(
+                "GameScene: Background clicked, hiding unit info popup",
+              );
+              if (this.unitInfoPopupSystem) {
+                this.unitInfoPopupSystem.hideUnitInfo();
+              }
+            } else {
+              // クリックされたオブジェクトがある場合はログ出力（デバッグ用）
+              console.log(
+                `GameScene: Clicked on ${currentlyOver.length} object(s), not hiding popup`,
+              );
+            }
+          }
+        } catch (error) {
+          console.error("GameScene: Error in background click handler:", error);
+        }
+      },
+    );
   }
 
   private highlightSelectedEntity(entity: Entity) {
@@ -1312,10 +1364,19 @@ export class GameScene extends Scene {
       });
     }
 
+    // 11. UnitInfoPopupSystem - ユニット情報ポップアップ
+    if (this.unitInfoPopupSystem) {
+      measureSystemUpdate("UnitInfoPopup", () => {
+        this.unitInfoPopupSystem?.update();
+      });
+    }
+
     const reviveAllyUnitOrder = orders.filter((o) => isReviveAllyUnitOrder(o));
     for (const order of reviveAllyUnitOrder) {
+      console.log("🔥Processing ReviveAllyUnit order:", order);
       const entityId = order.entityId;
       const entity = this.entityManager?.getEntity(entityId);
+      console.log("Entity to revive:", entity);
       if (entity?.components.health?.isDead) {
         entity.components.health.isDead = false;
         entity.components.health.currentHealth =

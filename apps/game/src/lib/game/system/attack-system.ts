@@ -341,6 +341,16 @@ export class AttackSystem {
         // 敵エンティティを削除
         this.scheduleEntityRemoval(targetEntity);
       }
+      if(unitComponent) {
+        // 搭乗している場合、搭乗を解除
+        if(unitComponent.deployedStructureId) {
+          const structure = this.entityManager.getEntity(unitComponent.deployedStructureId);
+          if(structure && structure.components.structure) {
+            structure.components.structure.deployedUnitId = undefined;
+          }
+          unitComponent.deployedStructureId = undefined;
+        }
+      }
     }
 
     // ゲートの場合はGameStateSystemに通知

@@ -37,7 +37,14 @@ export type Component = ComponentMap[keyof ComponentMap];
 export { isAttackComponent } from "./attack-component";
 export { isEnemyComponent } from "./enemy-component";
 export { isHealthComponent } from "./health-component";
-export { isMovementComponent } from "./movement-component";
+export {
+  applyStun,
+  clearStun,
+  isMovementComponent,
+  isStunned,
+  resumeFromCombat,
+  stopForCombat,
+} from "./movement-component";
 export { isPositionComponent } from "./position-component";
 export { isProjectileComponent } from "./projectile-component";
 export { isStructureComponent } from "./structure-component";

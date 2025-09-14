@@ -1,11 +1,18 @@
 import type PhaserNavMeshPlugin from "phaser-navmesh";
 import type { NavMesh } from "phaser-navmesh";
+import type { AttackComponent } from "../components/attack-component";
+import { calculateDistance } from "../components/attack-component";
+import type { HealthComponent } from "../components/health-component";
 import {
   advancePathIndex,
+  applyStun,
   clearMovementTarget,
   getNextPathPoint,
+  isStunned,
   type MovementComponent,
+  resumeFromCombat,
   setMovementTarget,
+  stopForCombat,
   updateAnimationFrame,
   updateMovementDirection,
 } from "../components/movement-component";
@@ -13,23 +20,33 @@ import type {
   Point,
   PositionComponent,
 } from "../components/position-component";
+import type { TargetComponent } from "../components/target-component";
+import { DEFAULT_COMBAT_RANGE_CONFIG, DEFAULT_STUN_CONFIG } from "../constants";
 import type { Entity } from "../entities/entity";
 import type { createEntityManager } from "../entities/entity-manager";
+import type { CombatRangeConfig, StunConfig } from "../types/combat-config";
 
 type EntityManager = ReturnType<typeof createEntityManager>;
 
 export class MovementSystem {
   private entityManager: EntityManager;
   private navMesh: NavMesh;
+  private combatRangeConfig: CombatRangeConfig;
+  private stunConfig: StunConfig;
+  private lastCombatRangeCheck: number = 0;
+  private lastStunCheck: number = 0;
 
   constructor(
     entityManager: EntityManager,
     navMeshPlugin: PhaserNavMeshPlugin,
     navMesh: NavMesh,
+    combatRangeConfig: CombatRangeConfig = DEFAULT_COMBAT_RANGE_CONFIG,
+    stunConfig: StunConfig = DEFAULT_STUN_CONFIG,
   ) {
     this.entityManager = entityManager;
-    this.navMeshPlugin = navMeshPlugin;
     this.navMesh = navMesh;
+    this.combatRangeConfig = combatRangeConfig;
+    this.stunConfig = stunConfig;
   }
 
   /**
@@ -45,8 +62,8 @@ export class MovementSystem {
     const entity = this.entityManager.getEntity(entityId);
     if (!entity) return false;
 
-    const positionComponent = entity.components.position
-    const movementComponent = entity.components.movement
+    const positionComponent = entity.components.position;
+    const movementComponent = entity.components.movement;
 
     if (!positionComponent || !movementComponent) {
       console.warn(
@@ -97,14 +114,31 @@ export class MovementSystem {
    * @param delta デルタタイム（ミリ秒）
    */
   public update(delta: number): void {
+    const currentTime = Date.now();
     const entities = this.entityManager.getAllEntities();
 
+    // スタン効果チェックを定期的に実行
+    if (currentTime - this.lastStunCheck >= 50) {
+      // 50ms間隔でチェック
+      this.updateStunStates(currentTime);
+      this.lastStunCheck = currentTime;
+    }
+
+    // 戦闘範囲チェックを定期的に実行
+    if (
+      currentTime - this.lastCombatRangeCheck >=
+      this.combatRangeConfig.checkInterval
+    ) {
+      this.updateCombatRangeStates(currentTime);
+      this.lastCombatRangeCheck = currentTime;
+    }
+
     for (const entity of entities) {
-      if(entity.components?.health?.isDead) {
+      if (entity.components?.health?.isDead) {
         // 死亡している場合は移動しない
         continue;
       }
-      this.updateEntityMovement(entity, delta);
+      this.updateEntityMovement(entity, delta, currentTime);
       // アニメーションフレームも更新
       const movementComponent = entity.components.movement;
       if (movementComponent) {
@@ -113,7 +147,11 @@ export class MovementSystem {
     }
   }
 
-  private updateEntityMovement(entity: Entity, delta: number): void {
+  private updateEntityMovement(
+    entity: Entity,
+    delta: number,
+    currentTime: number,
+  ): void {
     const positionComponent = entity.components.position as
       | PositionComponent
       | undefined;
@@ -121,11 +159,29 @@ export class MovementSystem {
       | MovementComponent
       | undefined;
 
+    if (!positionComponent || !movementComponent) {
+      return;
+    }
+
+    // スタン状態チェック
+    if (isStunned(movementComponent, currentTime)) {
+      return;
+    }
+
+    // スタン時間が経過した場合の復帰処理
     if (
-      !positionComponent ||
-      !movementComponent ||
-      !movementComponent.isMoving
+      movementComponent.stunEndTime &&
+      currentTime >= movementComponent.stunEndTime
     ) {
+      this.handleStunRecovery(movementComponent);
+    }
+
+    // 戦闘のために停止中の場合は移動しない
+    if (movementComponent.isStoppedForCombat) {
+      return;
+    }
+
+    if (!movementComponent.isMoving) {
       return;
     }
 
@@ -202,6 +258,277 @@ export class MovementSystem {
       | undefined;
     if (movementComponent) {
       clearMovementTarget(movementComponent);
+    }
+  }
+
+  /**
+   * 戦闘範囲状態を更新する
+   * @param currentTime 現在時刻
+   */
+  private updateCombatRangeStates(currentTime: number): void {
+    const entities = this.entityManager.getAllEntities();
+
+    for (const entity of entities) {
+      this.updateEntityCombatRangeState(entity, currentTime);
+    }
+  }
+
+  /**
+   * 個別エンティティの戦闘範囲状態を更新する
+   * @param entity 対象エンティティ
+   * @param currentTime 現在時刻
+   */
+  private updateEntityCombatRangeState(
+    entity: Entity,
+    currentTime: number,
+  ): void {
+    const positionComponent = entity.components.position as
+      | PositionComponent
+      | undefined;
+    const movementComponent = entity.components.movement as
+      | MovementComponent
+      | undefined;
+    const attackComponent = entity.components.attack as
+      | AttackComponent
+      | undefined;
+    const targetComponent = entity.components.target as
+      | TargetComponent
+      | undefined;
+
+    if (
+      !positionComponent ||
+      !movementComponent ||
+      !attackComponent ||
+      !targetComponent
+    ) {
+      return;
+    }
+
+    // 死亡している場合は処理しない
+    if (entity.components?.health?.isDead) {
+      return;
+    }
+
+    // スタン中は戦闘範囲チェックをスキップ
+    if (isStunned(movementComponent, currentTime)) {
+      return;
+    }
+
+    // ターゲットエンティティを取得
+    const targetEntity = targetComponent.targetEntityId
+      ? this.entityManager.getEntity(targetComponent.targetEntityId)
+      : null;
+
+    if (!targetEntity || !targetEntity.components.position) {
+      // ターゲットがない場合は戦闘停止状態を解除
+      if (movementComponent.isStoppedForCombat) {
+        resumeFromCombat(movementComponent);
+      }
+      return;
+    }
+
+    const targetPosition = targetEntity.components
+      .position as PositionComponent;
+    const distance = calculateDistance(
+      positionComponent.point,
+      targetPosition.point,
+    );
+    const attackRange = attackComponent.range;
+
+    // 味方ユニットがStructureに近づく場合は攻撃範囲で停止しない
+    const isTargetStructure = !!targetEntity.components.structure;
+    const isEntityFriendly = !!entity.components.unit; // unitコンポーネントがあれば味方
+
+    if (isEntityFriendly && isTargetStructure) {
+      // 味方ユニットがStructureに向かう場合は戦闘停止状態を解除
+      if (movementComponent.isStoppedForCombat) {
+        resumeFromCombat(movementComponent);
+      }
+      return;
+    }
+
+    // 攻撃範囲内での停止判定
+    const stopDistance = attackRange * this.combatRangeConfig.stopThreshold;
+    const resumeDistance = attackRange * this.combatRangeConfig.resumeThreshold;
+
+    if (!movementComponent.isStoppedForCombat && distance <= stopDistance) {
+      // 攻撃範囲内に入ったので停止
+      stopForCombat(movementComponent, true);
+    } else if (
+      movementComponent.isStoppedForCombat &&
+      distance > resumeDistance
+    ) {
+      // 攻撃範囲から外れたので移動再開
+      resumeFromCombat(movementComponent);
+    }
+  }
+
+  /**
+   * 戦闘範囲設定を更新する
+   * @param config 新しい設定
+   */
+  public updateCombatRangeConfig(config: CombatRangeConfig): void {
+    this.combatRangeConfig = config;
+  }
+
+  /**
+   * 現在の戦闘範囲設定を取得する
+   */
+  public getCombatRangeConfig(): CombatRangeConfig {
+    return { ...this.combatRangeConfig };
+  }
+
+  /**
+   * スタン状態を更新する
+   * @param currentTime 現在時刻
+   */
+  private updateStunStates(currentTime: number): void {
+    const entities = this.entityManager.getAllEntities();
+
+    for (const entity of entities) {
+      this.updateEntityStunState(entity, currentTime);
+    }
+  }
+
+  /**
+   * 個別エンティティのスタン状態を更新する
+   * @param entity 対象エンティティ
+   * @param currentTime 現在時刻
+   */
+  private updateEntityStunState(entity: Entity, currentTime: number): void {
+    const healthComponent = entity.components.health as
+      | HealthComponent
+      | undefined;
+    const movementComponent = entity.components.movement as
+      | MovementComponent
+      | undefined;
+
+    if (!healthComponent || !movementComponent) {
+      return;
+    }
+
+    // 死亡している場合は処理しない
+    if (healthComponent.isDead) {
+      return;
+    }
+
+    // HealthComponentから攻撃履歴を取得
+    const lastDamageTime = healthComponent.lastDamageTime;
+    const lastDamageFrom = healthComponent.lastDamageFrom;
+
+    if (!lastDamageTime || !lastDamageFrom) {
+      return;
+    }
+
+    // 既にスタン中の場合はスキップ
+    if (isStunned(movementComponent, currentTime)) {
+      return;
+    }
+
+    // スタン効果を適用すべきかチェック
+    const timeSinceLastDamage = currentTime - lastDamageTime;
+    const stunThreshold = 100; // 100ms以内の攻撃に対してスタン効果を適用
+
+    if (timeSinceLastDamage <= stunThreshold) {
+      // スタン効果を適用
+      const stunDuration = this.calculateStunDuration(entity);
+      applyStun(movementComponent, stunDuration, currentTime);
+
+      console.log(
+        `Applied stun effect to entity ${entity.id} for ${stunDuration}ms (attacked by ${lastDamageFrom})`,
+      );
+
+      // 攻撃履歴をクリア（同じ攻撃で複数回スタンしないように）
+      healthComponent.lastDamageTime = undefined;
+      healthComponent.lastDamageFrom = undefined;
+    }
+  }
+
+  /**
+   * エンティティのスタン時間を計算する
+   * @param entity 対象エンティティ
+   * @returns スタン時間（ミリ秒）
+   */
+  private calculateStunDuration(entity: Entity): number {
+    const unitComponent = entity.components.unit;
+    const enemyComponent = entity.components.enemy;
+
+    let unitType = "default";
+
+    // ユニットタイプを判定
+    if (unitComponent) {
+      switch (unitComponent.unitType) {
+        case "soldier":
+          unitType = "heavy";
+          break;
+        case "archer":
+          unitType = "light";
+          break;
+        case "mage":
+          unitType = "light";
+          break;
+        default:
+          unitType = "default";
+      }
+    } else if (enemyComponent) {
+      switch (enemyComponent.enemyType) {
+        case "basic":
+          unitType = "default";
+          break;
+        case "fast":
+          unitType = "fast";
+          break;
+        case "heavy":
+          unitType = "tank";
+          break;
+        default:
+          unitType = "default";
+      }
+    }
+
+    // 基本スタン時間を取得
+    const baseDuration = this.stunConfig.defaultDuration;
+
+    // ユニットタイプ修正値を適用
+    const modifier = this.stunConfig.unitTypeModifiers[unitType] || 1.0;
+
+    return Math.round(baseDuration * modifier);
+  }
+
+  /**
+   * スタン設定を更新する
+   * @param config 新しい設定
+   */
+  public updateStunConfig(config: StunConfig): void {
+    this.stunConfig = config;
+  }
+
+  /**
+   * 現在のスタン設定を取得する
+   */
+  public getStunConfig(): StunConfig {
+    return { ...this.stunConfig };
+  }
+
+  /**
+   * スタン時間経過後の復帰処理
+   * @param movementComponent 移動コンポーネント
+   */
+  private handleStunRecovery(movementComponent: MovementComponent): void {
+    // スタン効果をクリア
+    movementComponent.stunEndTime = undefined;
+
+    // 戦闘停止状態も解除（元の目標への移動を再開）
+    if (
+      movementComponent.isStoppedForCombat &&
+      movementComponent.originalTarget
+    ) {
+      resumeFromCombat(movementComponent);
+      console.log("Stun recovery: Resumed movement to original target");
+    } else {
+      // 戦闘停止状態のみ解除
+      movementComponent.isStoppedForCombat = false;
+      console.log("Stun recovery: Cleared combat stop state");
     }
   }
 }

@@ -27,6 +27,9 @@ export type MovementComponent = Component<
     targetEntityId?: string;
     animationFrame: number; // 現在のアニメーションフレーム（0-2の循環）
     animationTimer: number; // アニメーションタイマー
+    isStoppedForCombat: boolean; // 戦闘のために停止中かどうか
+    originalTarget?: Point; // 戦闘前の元の目標位置
+    stunEndTime?: number; // スタン終了時刻（ミリ秒）
   }
 >;
 
@@ -42,6 +45,9 @@ export const createMovementComponent = (
   currentDirection: Direction.DOWN,
   animationFrame: 1, // 静止時のデフォルトフレーム（中央）
   animationTimer: 0, // アニメーションタイマー
+  isStoppedForCombat: false, // 戦闘のために停止中かどうか
+  originalTarget: undefined, // 戦闘前の元の目標位置
+  stunEndTime: undefined, // スタン終了時刻（ミリ秒）
 });
 
 export const isMovementComponent = (
@@ -157,3 +163,65 @@ export const updateAnimationFrame = (
   }
 };
 
+// 戦闘関連のユーティリティ関数
+
+// 戦闘のために移動を停止する
+export const stopForCombat = (
+  movement: MovementComponent,
+  preserveOriginalTarget: boolean = true,
+): void => {
+  if (
+    preserveOriginalTarget &&
+    movement.targetPosition &&
+    !movement.originalTarget
+  ) {
+    movement.originalTarget = { ...movement.targetPosition };
+  }
+  movement.isStoppedForCombat = true;
+  movement.isMoving = false;
+};
+
+// 戦闘停止状態を解除し、元の目標への移動を再開する
+export const resumeFromCombat = (movement: MovementComponent): void => {
+  movement.isStoppedForCombat = false;
+  if (movement.originalTarget) {
+    movement.targetPosition = movement.originalTarget;
+    movement.isMoving = true;
+    movement.originalTarget = undefined;
+  }
+};
+
+// スタン効果を適用する
+export const applyStun = (
+  movement: MovementComponent,
+  stunDuration: number,
+  currentTime: number,
+): void => {
+  movement.stunEndTime = currentTime + stunDuration;
+  movement.isMoving = false;
+  // スタン中は戦闘停止状態も設定
+  if (
+    !movement.isStoppedForCombat &&
+    movement.targetPosition &&
+    !movement.originalTarget
+  ) {
+    movement.originalTarget = { ...movement.targetPosition };
+  }
+  movement.isStoppedForCombat = true;
+};
+
+// スタン状態かどうかを判定する
+export const isStunned = (
+  movement: MovementComponent,
+  currentTime: number,
+): boolean => {
+  return (
+    movement.stunEndTime !== undefined && currentTime < movement.stunEndTime
+  );
+};
+
+// スタン効果を解除する
+export const clearStun = (movement: MovementComponent): void => {
+  movement.stunEndTime = undefined;
+  // スタンが解除されても戦闘停止状態は別途管理される
+};

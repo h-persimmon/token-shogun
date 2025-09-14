@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Tasks PR Automation",
+  "description": "Monitors .kiro/specs/*/tasks.md files for updates and creates a GitHub Pull Request when all tasks are completed, including diff analysis and task summary",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      ".kiro/specs/*/tasks.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A tasks.md file has been updated. Please check if all tasks in the file are completed (look for WHEN section completion status). If all tasks are completed, use GitHub MCP to create a Pull Request. When creating the PR, run `git diff --exit-code -U9999` command to analyze the changes and reference the tasks.md file to write a comprehensive description of what was accomplished and what changes were made. Include both the task completion summary and technical diff analysis in the PR description."
+  }
+}

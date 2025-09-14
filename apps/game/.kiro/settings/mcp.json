@@ -10,7 +10,7 @@
         "--context",
         "ide-assistant",
         "--project",
-        "/Users/xxx/sapper-blog-app"
+        "../"
       ],
       "env": {},
       "disabled": false,
@@ -26,6 +26,28 @@
         "write_memory",
         "search_for_pattern",
         "think_about_collected_information"
+      ]
+    },
+    "github": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "get_me",
+        "list_issues",
+        "get_issue",
+        "search_repositories",
+        "create_pull_request"
       ]
     }
   }

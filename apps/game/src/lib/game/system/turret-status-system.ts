@@ -63,15 +63,28 @@ export class TurretStatusSystem {
     const structureComponent = entity.components.structure as StructureComponent;
     const positionComponent = entity.components.position as PositionComponent;
 
-    // 砲台でない場合、またはwith-unitタイプでない場合はスキップ
+    // with-unitタイプの構造物でない場合はスキップ
     if (
       !structureComponent ||
       !positionComponent ||
-      structureComponent.structureType !== "cannon" ||
       structureComponent.attackableType !== "with-unit"
     ) {
       this.removeStatusText(entity.id);
       return;
+    }
+
+    // 実際のstructureTypeをチェック（artillery_cannonやarcher_towerなど）
+    const actualStructureType = (structureComponent as any).structureType;
+    if (!actualStructureType || 
+        (actualStructureType !== "artillery_cannon" && 
+         actualStructureType !== "archer_tower")) {
+      this.removeStatusText(entity.id);
+      return;
+    }
+
+    // デバッグログ（開発時のみ）
+    if (!this.statusTexts.has(entity.id) && process.env.NODE_ENV === 'development') {
+      console.log(`TurretStatusSystem: Creating status for ${actualStructureType} at (${positionComponent.point.x}, ${positionComponent.point.y})`);
     }
 
     // ステータステキストを作成または更新

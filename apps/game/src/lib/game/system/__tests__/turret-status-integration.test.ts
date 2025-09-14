@@ -56,6 +56,7 @@ describe("TurretStatusSystem Integration", () => {
     const cannon = entityManager.createEntity("cannon", 100, 100, 1);
     entityManager.addComponent(cannon.id, createPositionComponent(5, 5));
     const structureComponent = createStructureComponent(false, "with-unit", "cannon");
+    (structureComponent as any).structureType = "artillery_cannon";
     entityManager.addComponent(cannon.id, structureComponent);
 
     // 初期状態: Available
@@ -84,11 +85,13 @@ describe("TurretStatusSystem Integration", () => {
     const cannon1 = entityManager.createEntity("cannon", 100, 100, 1);
     entityManager.addComponent(cannon1.id, createPositionComponent(5, 5));
     const structure1 = createStructureComponent(false, "with-unit", "cannon");
+    (structure1 as any).structureType = "artillery_cannon";
     entityManager.addComponent(cannon1.id, structure1);
 
     const cannon2 = entityManager.createEntity("cannon", 200, 200, 1);
     entityManager.addComponent(cannon2.id, createPositionComponent(10, 10));
     const structure2 = createStructureComponent(false, "with-unit", "cannon");
+    (structure2 as any).structureType = "artillery_cannon";
     entityManager.addComponent(cannon2.id, structure2);
 
     // 初期状態
@@ -111,10 +114,9 @@ describe("TurretStatusSystem Integration", () => {
     // 砲台エンティティを作成
     const cannon = entityManager.createEntity("cannon", 100, 100, 1);
     entityManager.addComponent(cannon.id, createPositionComponent(5, 5));
-    entityManager.addComponent(
-      cannon.id,
-      createStructureComponent(false, "with-unit", "cannon"),
-    );
+    const structureComponent = createStructureComponent(false, "with-unit", "cannon");
+    (structureComponent as any).structureType = "artillery_cannon";
+    entityManager.addComponent(cannon.id, structureComponent);
 
     turretStatusSystem.update();
     expect(mockScene.add.container).toHaveBeenCalled();

@@ -4,8 +4,8 @@ import { GameEngine } from "@/game-logic/game-engine";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GameGetResponseBody } from "@/api-interface/games/get-response-body";
-import { Unit } from "@/game-logic/unit/class";
 import { GameStatus } from "@/game-logic/game-status";
+import { Game } from "@kiro-rts/game";
 
 /**
  * ゲームデータを取得する関数（Kiroが生成）
@@ -56,6 +56,7 @@ export default function GamePage() {
   const [prompt, setPrompt] = useState("");
   const [tokenCount, setTokenCount] = useState(0);
   const [gameData, setGameData] = useState<GameGetResponseBody | null>(null);
+  const [selectedCsvPath, setSelectedCsvPath] = useState<string>("/game-assets/config/enemy-waves.csv");
 
   useEffect(() => {
     const initializeGame = async () => {
@@ -291,7 +292,7 @@ export default function GamePage() {
       <div className="w-3/4 p-4 overflow-y-auto">
         <div className="bg-white rounded-lg shadow p-6">
           {/* 上部: 成功・失敗ボタン */}
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 mb-6">
             <button
               onClick={handleSuccess}
               className="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center gap-2"
@@ -306,143 +307,37 @@ export default function GamePage() {
             </button>
           </div>
 
-          <h1 className="text-2xl font-bold mb-4">ゲーム状況</h1>
-
-          {/* ステージ情報 */}
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">ステージ情報</h2>
-            <div className="bg-gray-50 p-4 rounded">
-              <p>
-                <strong>ID:</strong> {gameStatus.stage.id}
-              </p>
-              <p>
-                <strong>名前:</strong> {gameStatus.stage.name}
-              </p>
-              <p>
-                <strong>難易度:</strong> {gameStatus.stage.difficulty}
-              </p>
-              <p>
-                <strong>フィールドサイズ:</strong>{" "}
-                {gameStatus.stage.fieldSize.width} x{" "}
-                {gameStatus.stage.fieldSize.height}
-              </p>
-              <p>
-                <strong>最大トークン:</strong> {gameStatus.stage.maxTokens}
-              </p>
+          {/* CSV選択UI */}
+          <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">敵ウェーブ設定を選択</h2>
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={() => setSelectedCsvPath("/game-assets/config/enemy-waves.csv")}
+                className={`px-4 py-2 rounded ${selectedCsvPath === "/game-assets/config/enemy-waves.csv" ? "bg-blue-600 text-white" : "bg-gray-600 text-gray-300 hover:bg-gray-500"}`}
+              >
+                通常
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setSelectedCsvPath("/game-assets/config/enemy-waves-hard.csv")}
+                className={`px-4 py-2 rounded ${selectedCsvPath === "/game-assets/config/enemy-waves-hard.csv" ? "bg-red-600 text-white" : "bg-gray-600 text-gray-300 hover:bg-gray-500"}`}
+              >
+                ハード
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setSelectedCsvPath("/game-assets/config/enemy-waves-test.csv")}
+                className={`px-4 py-2 rounded ${selectedCsvPath === "/game-assets/config/enemy-waves-test.csv" ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300 hover:bg-gray-500"}`}
+              >
+                テスト
+              </button>
             </div>
+            <p className="text-gray-600 text-sm mt-2">現在選択中: {selectedCsvPath}</p>
           </div>
 
-          {/* 敵ユニット情報 */}
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">
-              敵ユニット ({gameStatus.enemyUnitList.length}体)
-            </h2>
-            <div className="space-y-4">
-              {gameStatus.enemyUnitList.map((unit: Unit) => (
-                <div
-                  key={unit.id}
-                  className="bg-red-50 border border-red-200 p-4 rounded"
-                >
-                  <h3 className="font-semibold text-red-800 mb-2">{unit.id}</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p>
-                        <strong>ユニットタイプID:</strong> {unit.unitType.id}
-                      </p>
-                      <p>
-                        <strong>名前:</strong> {unit.unitType.name}
-                      </p>
-                      <p>
-                        <strong>陣営:</strong> {unit.unitType.faction}
-                      </p>
-                      <p>
-                        <strong>最大HP:</strong> {unit.unitType.maxHp}
-                      </p>
-                      <p>
-                        <strong>デフォルト速度:</strong>{" "}
-                        {unit.unitType.defaultSpeed}
-                      </p>
-                    </div>
-                    <div>
-                      <p>
-                        <strong>座標:</strong> ({unit.position.x},{" "}
-                        {unit.position.y})
-                      </p>
-                      <p>
-                        <strong>現在HP:</strong> {unit.currentHp}
-                      </p>
-                      <p>
-                        <strong>現在速度:</strong> {unit.currentSpeed}
-                      </p>
-                      <p>
-                        <strong>現在イベント:</strong> {unit.currentEvent.id}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 味方ユニット情報 */}
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">
-              味方ユニット ({gameStatus.allyUnitList.length}体)
-            </h2>
-            <div className="space-y-4">
-              {gameStatus.allyUnitList.length === 0 ? (
-                <p className="text-gray-500">
-                  味方ユニットはまだ配置されていません
-                </p>
-              ) : (
-                gameStatus.allyUnitList.map((unit: Unit) => (
-                  <div
-                    key={unit.id}
-                    className="bg-blue-50 border border-blue-200 p-4 rounded"
-                  >
-                    <h3 className="font-semibold text-blue-800 mb-2">
-                      {unit.id}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p>
-                          <strong>ユニットタイプID:</strong> {unit.unitType.id}
-                        </p>
-                        <p>
-                          <strong>名前:</strong> {unit.unitType.name}
-                        </p>
-                        <p>
-                          <strong>陣営:</strong> {unit.unitType.faction}
-                        </p>
-                        <p>
-                          <strong>最大HP:</strong> {unit.unitType.maxHp}
-                        </p>
-                        <p>
-                          <strong>デフォルト速度:</strong>{" "}
-                          {unit.unitType.defaultSpeed}
-                        </p>
-                      </div>
-                      <div>
-                        <p>
-                          <strong>座標:</strong> ({unit.position.x},{" "}
-                          {unit.position.y})
-                        </p>
-                        <p>
-                          <strong>現在HP:</strong> {unit.currentHp}
-                        </p>
-                        <p>
-                          <strong>現在速度:</strong> {unit.currentSpeed}
-                        </p>
-                        <p>
-                          <strong>現在イベント:</strong> {unit.currentEvent.id}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          {/* ゲームコンポーネント */}
+          <Game csvFilePath={selectedCsvPath} />
         </div>
       </div>
 

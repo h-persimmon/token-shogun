@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { GameState, LLMOutput, Order, AttackTargetOrder, DeploymentTargetOrder, DefenseCrystalOrder, ReviveAllyUnitOrder } from './interfaces';
 import { OrderResponseSchema } from './types';
 import { XMLParser, XMLValidator, XMLBuilder } from 'fast-xml-parser';
-import * as fs from 'fs';
-import * as path from 'path';
+// import * as fs from 'fs';
+// import * as path from 'path';
 
 /**
  * LLM prompt utility for game strategy
@@ -35,8 +35,8 @@ export class StrategyPrompt {
    */
   private readXsdSchema(schemaFileName: string): string {
     try {
-      const filePath = path.join(__dirname, schemaFileName);
-      return fs.readFileSync(filePath, 'utf8');
+      // const filePath = path.join(__dirname, schemaFileName);
+      // return fs.readFileSync(filePath, 'utf8');
     } catch (error) {
       console.error(`Error reading XSD schema from ${schemaFileName}:`, error);
       return '';

@@ -1,26 +1,13 @@
-# 動かし方
+# TOKEN SHOGUN
 
-## UI + gameで動かす
+## How to play
 
-
-1. 全パッケージの依存関係をインストールする。
-```
-pnpm i
+```shell
+pnpm install
 ```
 
-2. プロジェクトルートで以下のコマンドを実行する。
-```
+```shell
 pnpm dev
 ```
 
-3. /stages以下で、ゲームが遊べる
-
-# monorepo構成について
-
-<!-- taskによる/publicのコピー -->
-
-このリポジトリは、monorepo構成になっています。
-- apps/platform: UI部分/Next.js
-- apps/game: ゲームエンジン部分/vite
-
-apps/game/public以下に、ゲームの設定ファイルやアセットが配置されています。これらのファイルは、apps/platform/public以下にコピーされ、Next.jsでも動作するようになっています。
+localhost:3000/game

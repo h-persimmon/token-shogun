@@ -100,6 +100,10 @@ export class MovementSystem {
     const entities = this.entityManager.getAllEntities();
 
     for (const entity of entities) {
+      if(entity.components?.health?.isDead) {
+        // 死亡している場合は移動しない
+        continue;
+      }
       this.updateEntityMovement(entity, delta);
       // アニメーションフレームも更新
       const movementComponent = entity.components.movement;
@@ -139,7 +143,6 @@ export class MovementSystem {
     const distance = Math.sqrt(dx * dx + dy * dy);
     // 目標点に十分近い場合、次のパス点に進む
     if (distance < 5) {
-      console.log(`🔥Entity ${entity.id} reached target (${currentTarget.x}, ${currentTarget.y})`);
       // 5ピクセル以内なら到達とみなす
       advancePathIndex(movementComponent);
       return;
@@ -148,7 +151,6 @@ export class MovementSystem {
     // 移動量を計算（デルタ時間を考慮）
     const speed = movementComponent.speed;
     const moveDistance = (speed * delta) / 1000; // delta は ms なので秒に変換
-    console.log("🔥", moveDistance, distance);
     if (moveDistance >= distance) {
       // 今回の更新で目標点に到達する
       positionComponent.point.x = currentTarget.x;

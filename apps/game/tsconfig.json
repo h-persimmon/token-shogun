@@ -16,7 +16,8 @@
   // plugins: [],
     "paths": {
       "@/*": ["./src/*"],
-      "@kiro-rts/characters": ["../../packages/characters/index.ts"]
+      "@kiro-rts/characters": ["../../packages/characters/index.ts"],
+      "@kiro-rts/vibe-strategy": ["../../packages/vibe-strategy/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

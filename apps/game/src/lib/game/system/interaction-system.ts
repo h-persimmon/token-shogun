@@ -11,6 +11,7 @@ export type InteractionCallbacks = {
     unitId: string,
     reason: string,
   ) => void;
+  onUnitClicked?: (unitId: string) => void;
 };
 
 export class InteractionSystem {
@@ -21,6 +22,7 @@ export class InteractionSystem {
   private movementSystem: MovementSystem;
   private clickableStructures: Map<string, Phaser.GameObjects.Sprite> =
     new Map();
+  private clickableUnits: Map<string, Phaser.GameObjects.Sprite> = new Map();
 
   constructor(
     scene: Phaser.Scene,
@@ -40,6 +42,8 @@ export class InteractionSystem {
   private setupStructureInteractions(): void {
     // 既存の砲台にクリックイベントを設定
     this.updateStructureInteractions();
+    // ユニットのクリックイベントを設定
+    this.updateUnitInteractions();
   }
 
   public updateStructureInteractions(): void {
@@ -48,12 +52,32 @@ export class InteractionSystem {
 
     // 全ての砲台エンティティを取得してクリック可能にする
     for (const entity of this.entityManager.getAllEntities()) {
-      const structureComponent = entity.components.structure
+      const structureComponent = entity.components.structure;
       if (
         structureComponent &&
         structureComponent.attackableType === "with-unit"
       ) {
         this.makeStructureClickable(entity.id, entity.sprite!);
+      }
+    }
+  }
+
+  public updateUnitInteractions(): void {
+    // 既存のユニットインタラクションをクリア
+    this.clearUnitInteractions();
+
+    // 全てのユニット（味方、敵、構造物）エンティティを取得してクリック可能にする
+    for (const entity of this.entityManager.getAllEntities()) {
+      // ユニットコンポーネント、敵コンポーネント、構造物コンポーネントのいずれかを持つエンティティをユニットとして扱う
+      const hasUnitComponent = entity.components.unit;
+      const hasEnemyComponent = entity.components.enemy;
+      const hasStructureComponent = entity.components.structure;
+
+      if (
+        (hasUnitComponent || hasEnemyComponent || hasStructureComponent) &&
+        entity.sprite
+      ) {
+        this.makeUnitClickable(entity.id, entity.sprite);
       }
     }
   }
@@ -67,10 +91,20 @@ export class InteractionSystem {
     // スプライトをインタラクティブにする
     sprite.setInteractive();
 
-    // クリックイベントを追加
-    sprite.on("pointerdown", () => {
-      this.handleStructureClick(structureId);
-    });
+    // クリックイベントを追加（イベント伝播を停止して構造物クリックの優先度を確保）
+    sprite.on(
+      "pointerdown",
+      (
+        pointer: Phaser.Input.Pointer,
+        localX: number,
+        localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        // イベントの伝播を停止して背景クリックを防ぐ
+        event.stopPropagation();
+        this.handleStructureClick(structureId);
+      },
+    );
 
     // ホバーエフェクトを追加
     sprite.on("pointerover", () => {
@@ -84,6 +118,42 @@ export class InteractionSystem {
     this.clickableStructures.set(structureId, sprite);
   }
 
+  private makeUnitClickable(
+    unitId: string,
+    sprite: Phaser.GameObjects.Sprite,
+  ): void {
+    if (!sprite) return;
+
+    // スプライトをインタラクティブにする
+    sprite.setInteractive();
+
+    // クリックイベントを追加（イベント伝播を停止してユニットクリックの優先度を確保）
+    sprite.on(
+      "pointerdown",
+      (
+        pointer: Phaser.Input.Pointer,
+        localX: number,
+        localY: number,
+        event: Phaser.Types.Input.EventData,
+      ) => {
+        // イベントの伝播を停止して背景クリックを防ぐ
+        event.stopPropagation();
+        this.handleUnitClick(unitId);
+      },
+    );
+
+    // ホバーエフェクトを追加
+    sprite.on("pointerover", () => {
+      sprite.setTint(0xaaaaaa); // 少し暗くする
+    });
+
+    sprite.on("pointerout", () => {
+      sprite.clearTint(); // 元の色に戻す
+    });
+
+    this.clickableUnits.set(unitId, sprite);
+  }
+
   private clearStructureInteractions(): void {
     for (const [_structureId, sprite] of this.clickableStructures) {
       if (sprite?.active) {
@@ -93,6 +163,17 @@ export class InteractionSystem {
       }
     }
     this.clickableStructures.clear();
+  }
+
+  private clearUnitInteractions(): void {
+    for (const [_unitId, sprite] of this.clickableUnits) {
+      if (sprite?.active) {
+        sprite.removeAllListeners();
+        sprite.disableInteractive();
+        sprite.clearTint();
+      }
+    }
+    this.clickableUnits.clear();
   }
 
   private handleStructureClick(structureId: string): void {
@@ -120,6 +201,29 @@ export class InteractionSystem {
     this.callbacks.onStructureClicked(structureId);
   }
 
+  private handleUnitClick(unitId: string): void {
+    console.log(`InteractionSystem: Unit clicked: ${unitId}`);
+
+    try {
+      // UnitInfoPopupSystemの呼び出し処理を実装
+      if (this.callbacks.onUnitClicked) {
+        this.callbacks.onUnitClicked(unitId);
+        console.log(
+          `InteractionSystem: Successfully called onUnitClicked callback for unit: ${unitId}`,
+        );
+      } else {
+        console.warn(
+          "InteractionSystem: onUnitClicked callback is not defined",
+        );
+      }
+    } catch (error) {
+      console.error(
+        `InteractionSystem: Error handling unit click for ${unitId}:`,
+        error,
+      );
+    }
+  }
+
   private showMessage(message: string): void {
     // 簡単なメッセージ表示（実際のゲームではより洗練されたUIを使用）
     const messageText = this.scene.add.text(
@@ -145,9 +249,12 @@ export class InteractionSystem {
 
   public update(): void {
     // 必要に応じて更新処理を追加
+    // 新しいエンティティが追加された場合にインタラクションを更新
+    this.updateUnitInteractions();
   }
 
   public destroy(): void {
     this.clearStructureInteractions();
+    this.clearUnitInteractions();
   }
 }

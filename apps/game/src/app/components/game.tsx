@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { GameScene } from "../../lib/game/scene/rts-scene";
+import { OrderListener } from "../../lib/game/order-listner";
+import { useChannelMessagingReceiver } from "@/lib/hooks/use-channel-messaging-receiver";
 
 // Next.js Page Component
 interface GameProps {
@@ -9,7 +11,9 @@ interface GameProps {
 
 export default function Game({ csvFilePath }: GameProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const orderListenerRef = useRef<OrderListener>(new OrderListener());
 
+  useChannelMessagingReceiver(orderListenerRef.current);
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -23,7 +27,7 @@ export default function Game({ csvFilePath }: GameProps) {
       width: 32 * 30,
       height: 600,
       backgroundColor: "#2E2E2E",
-      scene: new GameScene({ csvFilePath }),
+      scene: new GameScene({ csvFilePath }, orderListenerRef.current),
       physics: {
         default: "arcade",
         arcade: {
@@ -48,7 +52,7 @@ export default function Game({ csvFilePath }: GameProps) {
   }, [isMounted, csvFilePath]);
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+    <div className="bg-gray-800 p-4 rounded-lg shadow-lg relative">
       <div id="phaser-game" />
     </div>
   );

@@ -12,6 +12,7 @@ import {
 } from "../components/unit-component";
 import type { Entity } from "../entities/entity";
 import type { createEntityManager } from "../entities/entity-manager";
+import { TargetComponent } from '../components/target-component';
 
 type EntityManager = ReturnType<typeof createEntityManager>;
 
@@ -58,8 +59,8 @@ export class AutoDeploymentSystem {
    */
   private checkAutoDeployment(unitEntity: Entity<["unit" | "movement"]>): void {
     const unitComponent = unitEntity.components.unit
-    const movementComponent = unitEntity.components.movement
-    const targetId = movementComponent?.targetEntityId;
+    const targetComponent = unitEntity.components.target
+    const targetId = targetComponent?.targetEntityId;
     if (!targetId) return;
 
     const structureOrSomething = this.entityManager.getEntity(targetId);

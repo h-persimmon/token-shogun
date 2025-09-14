@@ -17,21 +17,25 @@ export interface GameState {
 }
 
 export type AttackTargetOrder = {
+  type: "attackTarget";
   entityId: string;
   targetEnemyTypeId: string;
 }
 
 export type DeploymentTargetOrder = {
+  type: "deploymentTarget";
   entityId: string;
   targetStructureId: string;
 }
 
 export type DefenseCrystalOrder = {
+  type: "defenseCrystal";
   entityId: string;
 }
 
 // ユニット蘇生
 export type ReviveAllyUnitOrder = {
+  type: "reviveAllyUnit";
   entityId: string;
 }
 
@@ -41,4 +45,20 @@ export type Order = AttackTargetOrder | DeploymentTargetOrder | DefenseCrystalOr
  */
 export interface LLMOutput {
   orders: Order[];
+}
+
+export function isAttackTargetOrder(order: Order): order is AttackTargetOrder {
+  return order.type === "attackTarget";
+}
+
+export function isDeploymentTargetOrder(order: Order): order is DeploymentTargetOrder {
+  return order.type === "deploymentTarget";
+}
+
+export function isDefenseCrystalOrder(order: Order): order is DefenseCrystalOrder {
+  return order.type === "defenseCrystal";
+}
+
+export function isReviveAllyUnitOrder(order: Order): order is ReviveAllyUnitOrder {
+  return order.type === "reviveAllyUnit";
 }

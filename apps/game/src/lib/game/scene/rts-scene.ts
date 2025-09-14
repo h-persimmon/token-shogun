@@ -1,18 +1,27 @@
 "use client";
+import { enemyUnitConfigs } from "@kiro-rts/characters";
+import {
+  isAttackTargetOrder,
+  isDeploymentTargetOrder,
+  type Order,
+} from "@kiro-rts/vibe-strategy";
 import { Scene } from "phaser";
 import PhaserNavMeshPlugin from "phaser-navmesh";
 import {
-  type MovementComponent,
-} from "../components/movement-component";
-import { spriteSheetNumber } from "../ui/sprite/character-chip";
+  isDefenseCrystalOrder,
+  isReviveAllyUnitOrder,
+} from "../../../../../../packages/vibe-strategy/interfaces";
+import type { MovementComponent } from "../components/movement-component";
 import type { PositionComponent } from "../components/position-component";
 import type { StructureComponent } from "../components/structure-component";
 import type { Entity } from "../entities/entity";
 import type { createEntityManager } from "../entities/entity-manager";
 import { setupEntityManager } from "../example";
+import { OrderListener } from "../order-listner/index";
 import { AttackSystem } from "../system/attack-system";
 import { AutoDeploymentSystem } from "../system/auto-deployment-system";
 import { AutoWaveSystem } from "../system/auto-wave-system";
+import { CameraControlSystem } from "../system/camera-control-system";
 import { DeploymentSystem } from "../system/deployment-system";
 import {
   createDefaultWaveConfigs,
@@ -22,9 +31,11 @@ import { FrameTestSystem } from "../system/frame-test-system";
 import { GameStateSystem } from "../system/game-state-system";
 import { HealthBarSystem } from "../system/health-bar-system";
 import { InteractionSystem } from "../system/interaction-system";
+import { MapBoundsCalculator } from "../system/map-bounds-calculator";
 import { MovementSystem } from "../system/movement-system";
 import { TargetingSystem } from "../system/targeting-system";
-import { enemyUnitConfigs } from "@kiro-rts/characters";
+import { spriteSheetNumber } from "../ui/sprite/character-chip";
+import { UnitInfoPopupSystem } from "../ui/unit-info/unit-info-popup-system";
 
 export class GameScene extends Scene {
   private entityManager?: ReturnType<typeof createEntityManager>;
@@ -41,7 +52,10 @@ export class GameScene extends Scene {
   private healthBarSystem?: HealthBarSystem;
   private autoWaveSystem?: AutoWaveSystem;
   private frameTestSystem?: FrameTestSystem;
+  private cameraControlSystem?: CameraControlSystem;
+  private unitInfoPopupSystem?: UnitInfoPopupSystem;
   private csvFilePath?: string;
+  private orderListener?: OrderListener;
 
   // パフォーマンス監視用
   private performanceStats = {
@@ -74,6 +88,7 @@ export class GameScene extends Scene {
   private updateSpriteDirection(entity: Entity): void {
     if (!entity.sprite) return;
 
+    const healthComponent = entity.components["health"];
     const movementComponent = entity.components["movement"] as
       | MovementComponent
       | undefined;
@@ -83,13 +98,22 @@ export class GameScene extends Scene {
     const direction = movementComponent.currentDirection;
     const animFrame = movementComponent.animationFrame; // 0, 1, 2
 
-    const frameNumber = spriteSheetNumber[direction][animFrame];
+    const frameNumber = healthComponent?.isDead
+      ? 1
+      : spriteSheetNumber[direction][animFrame];
     entity.sprite.setFrame(frameNumber);
+    entity.sprite.setAngle(healthComponent?.isDead ? 90 : 0);
   }
 
-  constructor(config?: { csvFilePath?: string }) {
+  constructor(
+    config?: { csvFilePath?: string },
+    orderListener?: OrderListener,
+  ) {
     super({ key: "GameScene" });
     this.csvFilePath = config?.csvFilePath;
+    this.orderListener = orderListener || new OrderListener();
+
+    window.scene = this;
   }
 
   /**
@@ -109,7 +133,17 @@ export class GameScene extends Scene {
     );
 
     // TargetingSystemを初期化
-    this.targetingSystem = new TargetingSystem(this.entityManager, this.movementSystem);
+    this.targetingSystem = new TargetingSystem(
+      this.entityManager,
+      this.movementSystem,
+    );
+
+    this.cameraControlSystem = new CameraControlSystem(this, {
+      height: 48 * 48,
+      width: 48 * 48,
+      tileHeight: 48,
+      tileWidth: 48,
+    });
 
     // AttackSystemを初期化
     this.attackSystem = new AttackSystem(this.entityManager);
@@ -165,6 +199,12 @@ export class GameScene extends Scene {
     // DeploymentSystemを初期化
     this.deploymentSystem = new DeploymentSystem(this.entityManager);
 
+    // UnitInfoPopupSystemを初期化
+    this.unitInfoPopupSystem = new UnitInfoPopupSystem(
+      this,
+      this.entityManager,
+    );
+
     // InteractionSystemを初期化
     const interactionCallbacks = {
       onStructureClicked: (structureId: string) => {
@@ -181,6 +221,12 @@ export class GameScene extends Scene {
         reason: string,
       ) => {
         console.log(`Deployment failed: ${reason}`);
+      },
+      onUnitClicked: (unitId: string) => {
+        console.log(`Unit clicked: ${unitId}`);
+        if (this.unitInfoPopupSystem) {
+          this.unitInfoPopupSystem.showUnitInfo(unitId);
+        }
       },
     };
     this.interactionSystem = new InteractionSystem(
@@ -226,7 +272,7 @@ export class GameScene extends Scene {
     // ゲートエンティティを検索してGameStateSystemに設定
     const allEntities = this.entityManager.getAllEntities();
     for (const entity of allEntities) {
-  const structureComponent = entity.components["structure"];
+      const structureComponent = entity.components["structure"];
       if (
         structureComponent &&
         (structureComponent as any).structureType === "gate"
@@ -238,56 +284,6 @@ export class GameScene extends Scene {
     }
   }
 
-  /**
-   * 敵の移動目標を設定
-   */
-  // private setupEnemyTargets(): void {
-  //   console.log("🔥", "setupEnemyTargets")
-  //   if (!this.entityManager) return;
-
-  //   const allEntities = this.entityManager.getAllEntities();
-  //   console.log("🔥", allEntities)
-  //   let gateEntity = null;
-
-  //   // ゲートエンティティを検索
-  //   for (const entity of allEntities) {
-  //     const structureComponent = entity.components["structure"];
-  //     if (
-  //       structureComponent &&
-  //       (structureComponent as any).structureType === "gate"
-  //     ) {
-  //       gateEntity = entity;
-  //       break;
-  //     }
-  //   }
-
-  //   if (!gateEntity) return;
-
-  //   // 敵エンティティに門への移動目標を設定
-  //   for (const entity of allEntities) {
-  //     const enemyComponent = entity.components["enemy"];
-  //     const movementComponent = entity.components["movement"];
-  //     console.log("🔥", enemyComponent, movementComponent)
-  //     if (enemyComponent && movementComponent && this.movementSystem) {
-  //       // 門の位置に向かって移動するように設定
-  //       const gatePos = gateEntity.components.position;
-  //       console.log("🔥", gatePos);
-  //       if (gatePos) {
-  //         this.movementSystem.moveEntityTo(entity.id, {
-  //           x: gatePos.point.x,
-  //           y: gatePos.point.y,
-  //         });
-  //         console.log(
-  //           `Enemy ${entity.id} targeting gate at (${gatePos.point.x}, ${gatePos.point.y})`,
-  //         );
-  //       }
-  //     }
-  //   }
-  // }
-
-  /**
-   * パフォーマンス監視UIを初期化
-   */
   private initializePerformanceUI(): void {
     if (!this.showPerformanceStats) return;
 
@@ -782,6 +778,11 @@ export class GameScene extends Scene {
     if (this.frameTestSystem) {
       this.frameTestSystem.destroy();
     }
+
+    // ユニット情報ポップアップシステムをクリーンアップ
+    if (this.unitInfoPopupSystem) {
+      this.unitInfoPopupSystem.destroy();
+    }
   }
 
   /**
@@ -867,6 +868,9 @@ export class GameScene extends Scene {
     // クリックイベントを再設定
     this.setupMovementControls();
 
+    // 背景クリック時のポップアップ非表示機能を再設定
+    this.setupBackgroundClickHandler();
+
     // HealthBarSystemを再初期化
     this.healthBarSystem = new HealthBarSystem(this.entityManager, this, {
       showOnlyWhenDamaged: true,
@@ -896,6 +900,12 @@ export class GameScene extends Scene {
     if (this.frameTestSystem) {
       this.frameTestSystem.setupManualControls(this.autoWaveSystem);
     }
+
+    // UnitInfoPopupSystemを再初期化
+    this.unitInfoPopupSystem = new UnitInfoPopupSystem(
+      this,
+      this.entityManager,
+    );
 
     console.log("Game reinitialized successfully");
   }
@@ -1017,8 +1027,10 @@ export class GameScene extends Scene {
 
   preload() {
     // for debug
-    const enemyCharachips = enemyUnitConfigs.map((c) => c.charachip).filter(Boolean);
-    console.log(enemyCharachips)
+    const enemyCharachips = enemyUnitConfigs
+      .map((c) => c.charachip)
+      .filter(Boolean);
+    console.log(enemyCharachips);
     for (const configs of enemyUnitConfigs) {
       const charachip = configs.charachip;
       const config = configs.charachipConfig || {
@@ -1033,7 +1045,7 @@ export class GameScene extends Scene {
         });
       }
     }
-  
+
     // ユニット用のアセットをロード（4行6列のスプライトシート）
     this.load.spritesheet("soldier", "/game-assets/slime.png", {
       frameWidth: 20, // 各フレームの幅
@@ -1047,8 +1059,10 @@ export class GameScene extends Scene {
     });
     // サイズ小さくして読み取り
     this.load.image("cannon", "/game-assets/cannon.png");
-    this.load.tilemapTiledJSON("map", "/game-assets/tilemaps/map_01.json");
-    this.load.image("tiles", "/game-assets/tilemaps/tiles.png");
+    this.load.image("basic", "/game-assets/tilemaps/basic.png");
+    this.load.image("wafu", "/game-assets/tilemaps/wafu.png");
+    this.load.image("shrine1", "/game-assets/tilemaps/shrine1.png");
+    this.load.tilemapTiledJSON("map", "/game-assets/tilemaps/map02.json");
   }
 
   create() {
@@ -1063,23 +1077,18 @@ export class GameScene extends Scene {
     this.navMeshPlugin = (this as any).navMeshPlugin;
 
     const tilemap = this.add.tilemap("map");
-    const tileset = tilemap.addTilesetImage("tiles", "tiles", 32, 32)!;
-    console.log(tileset);
-    tilemap.createLayer("bg", tileset);
-    const _wallLayer = tilemap.createLayer("walls", tileset);
+    const tileset1 = tilemap.addTilesetImage("wafu", "wafu", 48, 48)!;
+    const tileset2 = tilemap.addTilesetImage("shrine1", "shrine1", 48, 48)!;
+    const tileset3 = tilemap.addTilesetImage("basic", "basic", 48, 48)!;
+
+    tilemap.createLayer("ground", [tileset1, tileset2, tileset3]);
+    tilemap.createLayer("building", [tileset1, tileset2, tileset3]);
+    tilemap.createLayer("building2", [tileset1, tileset2, tileset3]);
 
     // Load the navMesh from the tilemap object layer "navmesh" (created in Tiled). The navMesh was
     // created with 12.5 pixels of space around obstacles.
     const objectLayer = tilemap.getObjectLayer("navmesh");
     const navMesh = this.navMeshPlugin.buildMeshFromTiled("mesh", objectLayer);
-
-    // タイトルテキスト
-    this.add
-      .text(400, 50, "Next.js + Phaser ECS Game", {
-        fontSize: "24px",
-        color: "#ffffff",
-      })
-      .setOrigin(0.5);
 
     // Entity Manager をセットアップ（example.tsのセットアップを利用）
     this.entityManager = setupEntityManager(this);
@@ -1097,6 +1106,9 @@ export class GameScene extends Scene {
     // 右クリックで移動命令を設定
     this.setupMovementControls();
 
+    // 背景クリック時のポップアップ非表示機能を設定
+    this.setupBackgroundClickHandler();
+
     // FrameTestSystemのマニュアルコントロールを設定
     if (this.frameTestSystem) {
       this.frameTestSystem.setupManualControls(this.autoWaveSystem);
@@ -1110,6 +1122,11 @@ export class GameScene extends Scene {
 
     // 攻撃エフェクトイベントリスナーを設定
     this.setupAttackEffectListeners();
+
+    // OrderListnerを初期化
+    if (this.orderListener && this.entityManager) {
+      this.orderListener.setEntityManager(this.entityManager);
+    }
   }
   // ユニットSpriteを表示
   private displayUnitSprites() {
@@ -1125,7 +1142,6 @@ export class GameScene extends Scene {
         | undefined;
       if (pos && entity.sprite) {
         entity.sprite.setPosition(pos.point.x, pos.point.y);
-        entity.sprite.setInteractive();
 
         // 初期のスプライトの向きを設定
         this.updateSpriteDirection(entity);
@@ -1153,7 +1169,9 @@ export class GameScene extends Scene {
                 "with-unit"
               ) {
                 // selectedEntityのターゲットをentityに設定
-                const positionComponent = entity.components["position"] as PositionComponent;
+                const positionComponent = entity.components[
+                  "position"
+                ] as PositionComponent;
                 this.movementSystem?.moveEntityTo(
                   selectedEntity.id,
                   {
@@ -1174,6 +1192,39 @@ export class GameScene extends Scene {
     });
   }
 
+  private setupBackgroundClickHandler(): void {
+    // 背景クリック時のポップアップ非表示機能
+    this.input.on(
+      "pointerdown",
+      (
+        pointer: Phaser.Input.Pointer,
+        currentlyOver: Phaser.GameObjects.GameObject[],
+      ) => {
+        try {
+          // 左クリックの場合のみ処理
+          if (pointer.leftButtonDown()) {
+            // クリックされたオブジェクトがない場合（背景クリック）
+            if (currentlyOver.length === 0) {
+              console.log(
+                "GameScene: Background clicked, hiding unit info popup",
+              );
+              if (this.unitInfoPopupSystem) {
+                this.unitInfoPopupSystem.hideUnitInfo();
+              }
+            } else {
+              // クリックされたオブジェクトがある場合はログ出力（デバッグ用）
+              console.log(
+                `GameScene: Clicked on ${currentlyOver.length} object(s), not hiding popup`,
+              );
+            }
+          }
+        } catch (error) {
+          console.error("GameScene: Error in background click handler:", error);
+        }
+      },
+    );
+  }
+
   private highlightSelectedEntity(entity: Entity) {
     // 既存のハイライトをクリア
     this.children.getChildren().forEach((child) => {
@@ -1192,8 +1243,12 @@ export class GameScene extends Scene {
   }
 
   update(time: number, delta: number) {
+    // 命令を取得
+    const orders = this.orderListener?.getOrders();
+
+    const nowTime = Date.now();
     // 各システムの更新処理を実行
-    this.updateSystems(time, delta);
+    this.updateSystems(nowTime, delta, orders || []);
 
     // ユニットSpriteの位置と向きをコンポーネントに合わせて更新
     this.updateEntitySprites();
@@ -1206,14 +1261,19 @@ export class GameScene extends Scene {
 
     // ゲーム状態UIを更新
     this.updateGameStateUI();
+
+    // OrderListenerのゲーム状態情報を更新
+    if (this.orderListener && this.entityManager) {
+      this.orderListener.setEntityManager(this.entityManager);
+      this.orderListener.updateGameStatusInfo();
+    }
   }
 
   /**
    * 全システムの更新処理を実行
    * システム更新順序は依存関係を考慮して最適化されている
    */
-  private updateSystems(_time: number, delta: number): void {
-    const currentTime = Date.now();
+  private updateSystems(time: number, delta: number, orders: Order[]): number {
     const frameStartTime = performance.now();
 
     // システム更新時間を測定するためのヘルパー関数
@@ -1230,7 +1290,7 @@ export class GameScene extends Scene {
     // 1. EnemySpawnSystem - 敵の生成
     if (this.enemySpawnSystem) {
       measureSystemUpdate("EnemySpawn", () => {
-        this.enemySpawnSystem?.update(currentTime);
+        this.enemySpawnSystem?.update(time);
       });
     }
 
@@ -1244,21 +1304,28 @@ export class GameScene extends Scene {
     // 3. TargetingSystem - 攻撃目標の選択
     if (this.targetingSystem) {
       measureSystemUpdate("Targeting", () => {
-        this.targetingSystem?.update();
+        this.targetingSystem?.update(
+          orders.filter(
+            (o) =>
+              isAttackTargetOrder(o) ||
+              isDefenseCrystalOrder(o) ||
+              isDeploymentTargetOrder(o),
+          ),
+        );
       });
     }
 
     // 4. AttackSystem - 攻撃処理
     if (this.attackSystem) {
       measureSystemUpdate("Attack", () => {
-        this.attackSystem?.update(currentTime);
+        this.attackSystem?.update(time);
       });
     }
 
     // 5. GameStateSystem - ゲーム状態の管理と勝敗判定
     if (this.gameStateSystem) {
       measureSystemUpdate("GameState", () => {
-        this.gameStateSystem?.update(currentTime);
+        this.gameStateSystem?.update(time);
       });
     }
 
@@ -1286,7 +1353,7 @@ export class GameScene extends Scene {
     // 9. AutoWaveSystem - 自動ウェーブ進行
     if (this.autoWaveSystem) {
       measureSystemUpdate("AutoWave", () => {
-        this.autoWaveSystem?.update(currentTime);
+        this.autoWaveSystem?.update(time);
       });
     }
 
@@ -1297,10 +1364,51 @@ export class GameScene extends Scene {
       });
     }
 
+    // 11. UnitInfoPopupSystem - ユニット情報ポップアップ
+    if (this.unitInfoPopupSystem) {
+      measureSystemUpdate("UnitInfoPopup", () => {
+        this.unitInfoPopupSystem?.update();
+      });
+    }
+
+    const reviveAllyUnitOrder = orders.filter((o) => isReviveAllyUnitOrder(o));
+    for (const order of reviveAllyUnitOrder) {
+      console.log("🔥Processing ReviveAllyUnit order:", order);
+      const entityId = order.entityId;
+      const entity = this.entityManager?.getEntity(entityId);
+      console.log("Entity to revive:", entity);
+      if (entity?.components.health?.isDead) {
+        entity.components.health.isDead = false;
+        entity.components.health.currentHealth =
+          entity.components.health.maxHealth;
+        if (entity?.components.position) {
+          const gatePosition = this.entityManager
+            ?.queryEntities({ required: ["structure"] })
+            .find(
+              (e) =>
+                (e.components.structure as StructureComponent).structureType ===
+                "gate",
+            )?.components.position;
+          if (gatePosition) {
+            entity.components.position.point = {
+              x: gatePosition.point.x,
+              y: gatePosition.point.y + 50,
+            };
+          }
+        }
+      }
+
+      if (this.cameraControlSystem) {
+        this.cameraControlSystem.update();
+      }
+    }
+
     // フレーム時間統計を更新
     const frameEndTime = performance.now();
     const frameTime = frameEndTime - frameStartTime;
     this.updateFrameTimeStats(frameTime);
+
+    return time;
   }
 
   /**
@@ -1332,8 +1440,8 @@ export class GameScene extends Scene {
 
     const entities = this.entityManager.getAllEntities();
     for (const entity of entities) {
-  const structureComponent = entity.components["structure"] as any;
-  const healthComponent = entity.components["health"] as any;
+      const structureComponent = entity.components["structure"] as any;
+      const healthComponent = entity.components["health"] as any;
 
       if (
         structureComponent &&

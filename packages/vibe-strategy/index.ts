@@ -3,6 +3,7 @@ import { StrategyPrompt } from './prompt';
 import { OrderResponseSchema, ApiResponseSchema } from './types';
 import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 
+export * from "./interfaces"
 /**
  * Strategy module for handling LLM-based game commands
  */

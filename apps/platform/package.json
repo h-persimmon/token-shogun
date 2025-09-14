@@ -23,7 +23,7 @@
     "@prisma/client": "^6.14.0",
     "prisma": "^6.14.0",
     "sqlite3": "^5.1.7",
-    "@kiro-rts/game": "workspace:*"
+    "@kiro-rts/vibe-strategy": "workspace:*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -8,6 +8,7 @@ import {
 } from "../components/attack-component";
 import type { EnemyComponent } from "../components/enemy-component";
 import {
+  recordDamageSource,
   updateHealthComponent,
 } from "../components/health-component";
 import type { MovementComponent } from "../components/movement-component";
@@ -27,6 +28,7 @@ import {
 import type { UnitComponent } from "../components/unit-component";
 import type { Entity } from "../entities/entity";
 import type { EntityManager } from "../entities/entity-manager";
+import { GameStateSystem } from "./game-state-system";
 
 /**
  * 攻撃結果の情報
@@ -89,6 +91,10 @@ export class AttackSystem {
     });
 
     for (const attacker of attackers) {
+      if(attacker.components?.health?.isDead) {
+        // 死亡している場合は移動しない
+        continue;
+      }
       this.processAttackerEntity(attacker, currentTime);
     }
 
@@ -116,7 +122,6 @@ export class AttackSystem {
     if (!this.canStructureAttack(attackerEntity)) {
       return;
     }
-
     if (!this.canUnitAttack(attackerEntity)) {
       return;
     }
@@ -196,6 +201,11 @@ export class AttackSystem {
    */
   private canUnitAttack(unitEntity: Entity<["attack" | "position" | "target"]>): boolean {
     const unitComponent = unitEntity.components.unit;
+    const targetComponent = unitEntity.components.target;
+    if(targetComponent?.specialMission != undefined) {
+      // 拠点防衛のための移動時は攻撃不可
+      return false;
+    }
     return !unitComponent || !unitComponent.deployedStructureId;
   }
 
@@ -247,6 +257,7 @@ export class AttackSystem {
       const damageDealt = this.calculateAndApplyDamage(
         attackerEntity,
         targetEntity,
+        currentTime
       );
 
       // 攻撃エフェクトを表示
@@ -254,7 +265,7 @@ export class AttackSystem {
 
       // 目標が撃破されたかチェック
       const targetDestroyed = targetHealth.isDead;
-      if (targetDestroyed) {
+      if (targetDestroyed && !targetEntity.components.unit) {
         this.handleTargetDestroyed(targetEntity);
       }
 
@@ -283,6 +294,7 @@ export class AttackSystem {
   public calculateAndApplyDamage(
     attackerEntity: Entity<["attack" | "target"]>,
     targetEntity: Entity<["health"]>,
+    time: number
   ): number {
     const attackComponent = attackerEntity.components.attack
     const targetHealth = targetEntity.components.health
@@ -293,6 +305,8 @@ export class AttackSystem {
 
     // 基本ダメージを取得
     let damage = attackComponent.damage;
+
+    recordDamageSource(targetHealth, attackerEntity.id, time);
 
     // 実際に与えるダメージを計算（現在の体力を超えないように）
     const actualDamage = Math.min(damage, targetHealth.currentHealth);
@@ -319,7 +333,7 @@ export class AttackSystem {
     // 敵が撃破された場合の処理
     if (wasAlive && healthComponent.isDead) {
       const enemyComponent = targetEntity.components.enemy;
-       const unitComponent = targetEntity.components.unit;
+      const unitComponent = targetEntity.components.unit;
       if (enemyComponent && this.gameStateSystem) {
         // GameStateSystemに敵撃破を通知
         this.gameStateSystem.notifyEnemyDefeated(targetEntity.id, 10);
@@ -327,10 +341,6 @@ export class AttackSystem {
         // 敵エンティティを削除
         this.scheduleEntityRemoval(targetEntity);
       }
-       // 味方ユニットの場合も削除
-       if (unitComponent) {
-         this.scheduleEntityRemoval(targetEntity);
-       }
     }
 
     // ゲートの場合はGameStateSystemに通知
@@ -341,67 +351,15 @@ export class AttackSystem {
       this.gameStateSystem
     ) {
       this.gameStateSystem.notifyStructureDamaged(targetEntity.id, damage);
+      // 搭乗者を取得
+      if (structureComponent.deployedUnitId) {
+        const deployedUnit = this.entityManager.getEntity(structureComponent.deployedUnitId);
+        if (deployedUnit) {
+          // 搭乗者の搭乗を解除
+          deployedUnit.components.unit!.deployedStructureId = undefined;
+        }
+      }
     }
-  }
-
-  /**
-   * ユニットタイプによるダメージ修正
-   * @param unitComponent ユニットコンポーネント
-   * @param baseDamage 基本ダメージ
-   * @returns 修正後のダメージ
-   */
-  private applyUnitDamageModifier(
-    unitComponent: UnitComponent,
-    baseDamage: number,
-  ): number {
-    // 将来的にユニットタイプ別の修正を実装
-    switch (unitComponent.unitType) {
-      case "soldier":
-        return baseDamage * 1.0; // 標準ダメージ
-      case "archer":
-        return baseDamage * 0.8; // 低ダメージだが射程が長い
-      case "mage":
-        return baseDamage * 1.2; // 高ダメージ
-      default:
-        return baseDamage;
-    }
-  }
-
-  /**
-   * 敵タイプによるダメージ修正
-   * @param enemyComponent 敵コンポーネント
-   * @param baseDamage 基本ダメージ
-   * @returns 修正後のダメージ
-   */
-  private applyEnemyDamageModifier(
-    enemyComponent: EnemyComponent,
-    baseDamage: number,
-  ): number {
-    // 将来的に敵タイプ別の修正を実装
-    switch (enemyComponent.enemyType) {
-      case "basic":
-        return baseDamage * 1.0; // 標準ダメージ
-      case "fast":
-        return baseDamage * 0.7; // 低ダメージだが高速
-      case "heavy":
-        return baseDamage * 1.5; // 高ダメージだが低速
-      default:
-        return baseDamage;
-    }
-  }
-
-  /**
-   * 構造物に対するダメージ修正
-   * @param structureComponent 構造物コンポーネント
-   * @param baseDamage 基本ダメージ
-   * @returns 修正後のダメージ
-   */
-  private applyStructureDamageModifier(
-    _structureComponent: StructureComponent,
-    baseDamage: number,
-  ): number {
-    // 構造物は一般的にダメージ軽減
-    return baseDamage * 0.8;
   }
 
   /**
@@ -556,10 +514,6 @@ export class AttackSystem {
     // 攻撃エフェクトを作成（Phaserシーンが必要）
     this.createAttackLine(attackerPos, targetPos, config);
     this.createImpactEffect(targetPos, config);
-
-    console.log(
-      `Attack effect: ${config.type} from (${attackerPos.point.x}, ${attackerPos.point.y}) to (${targetPos.point.x}, ${targetPos.point.y})`,
-    );
   }
 
   /**
@@ -1701,7 +1655,7 @@ export class AttackSystem {
    */
   private scheduleEntityRemoval(entity: Entity): void {
     this.entitiesToRemove.add(entity.id);
-
+    console.log("🔥 Entity scheduled for removal:", entity.id);
     // スプライトを非表示にする
     if (entity.sprite) {
       entity.sprite.setVisible(false);

@@ -9,7 +9,7 @@ export type StructureTargetPriority = "gate" | "defense" | "any";
 export type EnemyComponent = Component<
   typeof enemyComponentTag,
   {
-    enemyType: EnemyType;
+    enemyType: string;
     spawnTime: number;
     rewardValue: number; // 撃破時の報酬
     structureTargetPriority: StructureTargetPriority; // 構造物の攻撃優先度

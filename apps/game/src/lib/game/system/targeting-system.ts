@@ -1,3 +1,4 @@
+import { AttackTargetOrder, DefenseCrystalOrder, DeploymentTargetOrder } from "@kiro-rts/vibe-strategy";
 import { ComponentMap } from "../components";
 import {
   type AttackComponent,
@@ -23,12 +24,16 @@ import {
 import {
   clearTarget,
   setEntityTarget,
+  setPriorityAttackTarget,
+  setSpecialMission,
+  clearSpecialMission,
   type TargetComponent,
 } from "../components/target-component";
 import type { Entity } from "../entities/entity";
 import type { createEntityManager } from "../entities/entity-manager";
 import { MovementSystem } from "./movement-system";
 
+const WEIGHT_OF_ENEMY_TYPE_ORDER = 100
 type EntityManager = ReturnType<typeof createEntityManager>;
 
 export class TargetingSystem {
@@ -44,14 +49,25 @@ export class TargetingSystem {
    * システムの更新処理
    * 攻撃可能なエンティティの目標選択を行う
    */
-  public update(): void {
+  public update(orders: (AttackTargetOrder | DefenseCrystalOrder | DeploymentTargetOrder)[]): void {
     // 攻撃可能なエンティティ（AttackComponentとTargetComponentを持つ）を取得
     const attackers = this.entityManager.queryEntities({
       required: ["target", "attack"],
     });
 
+    // エンティティIDごとの命令マップを作成
+    const orderMap: Record<string, AttackTargetOrder | DefenseCrystalOrder | DeploymentTargetOrder> = {};
+    for (const order of orders) {
+      orderMap[order.entityId] = order;
+    }
+
     for (const attacker of attackers) {
-      this.updateEntityTarget(attacker);
+      if(attacker.components?.health?.isDead) {
+        continue;
+      }
+      // 該当エンティティへの命令があれば処理
+      const order = orderMap[attacker.id];
+      this.updateEntityTarget(attacker, order);
     }
   }
 
@@ -60,7 +76,7 @@ export class TargetingSystem {
    * @param attackerEntity 攻撃者エンティティ
    * @returns 攻撃範囲内の敵エンティティ配列
    */
-  public findEnemiesInRange(attackerEntity: Entity): Entity[] {
+  public findEnemiesInRange(attackerEntity: Entity, range: number): Entity[] {
   const attackerPos = attackerEntity.components["position"] as PositionComponent;
   const attackComponent = attackerEntity.components["attack"] as AttackComponent;
 
@@ -83,7 +99,7 @@ export class TargetingSystem {
 
       // 攻撃範囲内かチェック
       const distance = calculateDistance(attackerPos.point, targetPos.point);
-      if (distance <= attackComponent.range) {
+      if (distance <= range) {
         enemiesInRange.push(entity);
       }
     }
@@ -106,6 +122,7 @@ export class TargetingSystem {
     }
 
   const attackerPos = attackerEntity.components["position"];
+  const targetComponent = attackerEntity.components["target"];
   if (!attackerPos) {
     return null;
   }
@@ -113,57 +130,28 @@ export class TargetingSystem {
     let bestDistance = Infinity;
 
     for (const candidate of candidates) {
-      const candidatePos = candidate.components["position"];
+      const candidatePos = candidate.components["position"]
       if (!candidatePos) continue;
 
+      
+      // Prioritize candidates matching the desired enemyType if specified
+      const desiredEnemyType = targetComponent?.enemyTypeByOrder;
+      const candidateEnemyType = candidate.components["enemy"]?.enemyType;
+      const isTypeMatch = desiredEnemyType && candidateEnemyType === desiredEnemyType;
+      
       const distance = calculateDistance(attackerPos.point, candidatePos.point);
-      if (distance < bestDistance) {
-        bestDistance = distance;
+      const weightedDistance = distance / (isTypeMatch ? WEIGHT_OF_ENEMY_TYPE_ORDER : 1); // 基本距離スコア
+
+      // If type matches, prefer this candidate even if distance is slightly worse
+      if (
+        weightedDistance < bestDistance
+      ) {
+        bestDistance = weightedDistance;
         bestTarget = candidate;
       }
     }
 
     return bestTarget;
-  }
-
-  /**
-   * 目標エンティティのスコアを計算
-   * @param attackerEntity 攻撃者エンティティ
-   * @param targetEntity 目標エンティティ
-   * @returns 目標スコア（高いほど優先度が高い）
-   */
-  public calculateTargetScore(
-    attackerEntity: Entity,
-    targetEntity: Entity,
-  ): number {
-  const attackerPos = attackerEntity.components["position"] as PositionComponent;
-  const targetPos = targetEntity.components["position"] as PositionComponent;
-  const targetHealth = targetEntity.components["health"] as HealthComponent;
-
-    if (
-      !attackerPos ||
-      !targetPos ||
-      !targetHealth ||
-      targetHealth.currentHealth <= 0
-    ) {
-      return -1; // 無効な目標
-    }
-
-    // 基本スコア計算
-    const distance = calculateDistance(attackerPos.point, targetPos.point);
-    const distanceScore = this.calculateDistanceScore(distance);
-    const healthScore = this.calculateHealthScore(targetHealth);
-    const typeScore = this.calculateTypeScore(targetEntity);
-    const threatScore = this.calculateThreatScore(targetEntity, attackerEntity);
-
-    // 重み付きスコア合計
-    const totalScore =
-      distanceScore * 0.4 + // 距離の重要度: 40%
-      healthScore * 0.2 + // 体力の重要度: 20%
-      typeScore * 0.25 + // 種類の重要度: 25%
-      threatScore * 0.15; // 脅威度の重要度: 15%
-
-    return Math.max(0, totalScore);
   }
 
   /**
@@ -344,25 +332,60 @@ export class TargetingSystem {
 
     // 体力があり、位置情報がある場合のみ有効
     return (
-      healthComponent?.currentHealth > 0 && positionComponent !== undefined
+      healthComponent?.currentHealth > 0 && !healthComponent.isDead && positionComponent !== undefined
     );
   }
 
   /**
    * 指定されたエンティティの目標を更新
    * @param attackerEntity 攻撃者エンティティ
+   * @param order 命令オブジェクト
    */
-  private updateEntityTarget(attackerEntity: Entity<["attack" | "target"]>): void {
+  private updateEntityTarget(attackerEntity: Entity<["attack" | "target"]>, order: AttackTargetOrder | DefenseCrystalOrder | DeploymentTargetOrder | undefined): void {
     const targetComponent = attackerEntity.components.target
 
-    // 敵エンティティの場合は門を優先的に攻撃目標にする
     if (this.isEnemyEntity(attackerEntity) && this.isMovementEntity(attackerEntity)) {
       this.updateEnemyTarget(attackerEntity, targetComponent);
       return;
+    } else {
+      // 命令タイプに基づいて処理を分岐
+      if (order) {
+        // ユニットが砲台を動かしている場合、砲台への搭乗をクリア
+        const deployedId = attackerEntity.components["unit"]?.deployedStructureId
+        if (deployedId) {
+          attackerEntity.components["unit"]!.deployedStructureId = undefined;
+          const deployedStructure = this.entityManager.getEntity(deployedId);
+          if (deployedStructure) {
+            // 砲台からユニットを降ろす
+            deployedStructure.components["structure"]!.deployedUnitId = undefined;
+          }
+        }
+        if (order.type === "attackTarget") {
+          // 攻撃命令
+          const attackOrder = order as AttackTargetOrder;
+          const shouldUpdateForce = targetComponent.enemyTypeByOrder !== attackOrder.targetEnemyTypeId;
+          if (shouldUpdateForce) {
+            setPriorityAttackTarget(targetComponent, attackOrder.targetEnemyTypeId);
+          }
+          this.updateFriendlyTarget(attackerEntity, targetComponent, shouldUpdateForce, "attack", order);
+        } 
+        else if (order.type === "defenseCrystal") {
+          // 拠点防御命令
+          this.updateFriendlyTarget(attackerEntity, targetComponent, true, "defense", order);
+        } 
+        else if (order.type === "deploymentTarget") {
+          // 砲台配置命令
+          this.updateFriendlyTarget(attackerEntity, targetComponent, true, "deployment", order);
+        }
+        else {
+          // その他の命令またはデフォルト
+          this.updateFriendlyTarget(attackerEntity, targetComponent, false, "attack");
+        }
+      } else {
+        // 命令なしの通常更新
+        this.updateFriendlyTarget(attackerEntity, targetComponent, false, "attack");
+      }
     }
-
-    // 味方エンティティの通常の目標選択処理
-    this.updateFriendlyTarget(attackerEntity, targetComponent);
   }
 
   /**
@@ -398,7 +421,7 @@ export class TargetingSystem {
       });
       const allAllyUnits = this.entityManager.queryEntities({
         required: ["unit", "position", "health"],
-      });
+      }).filter(unit => !unit.components.health.isDead);
       const target = this.selectBestEnemyTargetByPriority(
         enemyEntity,
         allStructures,
@@ -466,60 +489,195 @@ export class TargetingSystem {
    * 味方エンティティの目標を更新
    * @param friendlyEntity 味方エンティティ
    * @param targetComponent 目標コンポーネント
+   * @param forceUpdateTarget 強制的に目標更新するかどうか
+   * @param actionType 実行するアクションタイプ（attack/defense/deployment）
+   * @param order 命令オブジェクト（存在する場合）
    */
   private updateFriendlyTarget(
     friendlyEntity: Entity,
     targetComponent: TargetComponent,
+    forceUpdateTarget: boolean = false,
+    actionType: "attack" | "defense" | "deployment" = "attack",
+    order?: AttackTargetOrder | DefenseCrystalOrder | DeploymentTargetOrder
   ): void {
-    // 現在の目標が有効かチェック
-    let currentTarget: Entity | null = null;
-    let currentTargetScore = -1;
-
-    if (targetComponent.targetEntityId) {
-      currentTarget =
-        this.entityManager.getEntity(targetComponent.targetEntityId) || null;
-
-      // 現在の目標が無効になった場合はクリア
-      if (currentTarget && !this.isValidTarget(currentTarget)) {
-        clearTarget(targetComponent);
-        currentTarget = null;
-      } else if (currentTarget) {
-        // 現在の目標のスコアを計算
-        currentTargetScore = this.calculateTargetScore(
-          friendlyEntity,
-          currentTarget,
-        );
+    // まず、特殊ミッションの状態を確認し、必要に応じて移動を続行
+    if (targetComponent.specialMission) {
+      // 特殊ミッション中は移動を継続（敵に攻撃されても目標変更しない）
+      if (friendlyEntity.components.movement && friendlyEntity.components.movement.isMoving) {
+        // 移動中は継続（攻撃されても目標を変更しない）
+        return;
+      } else {
+        // 目的地に到着した場合、特殊ミッション完了
+        const friendlyPos = friendlyEntity.components["position"] as PositionComponent;
+        
+        // 拠点守備の場合は、周囲の敵を攻撃するようにする
+        if (targetComponent.specialMission === "defense") {
+          clearSpecialMission(targetComponent);
+          // ここからは通常の攻撃処理に移行
+        }
+        
+        // 砲台配置の場合は、特殊ミッションを継続（砲台にたどり着くまで）
+        if (targetComponent.specialMission === "deployment" && targetComponent.targetEntityId) {
+          const targetStructure = this.entityManager.getEntity(targetComponent.targetEntityId);
+          if (targetStructure) {
+            // 砲台に到達したか確認（近接判定）
+            const targetPos = targetStructure.components["position"] as PositionComponent;
+            if (friendlyPos && targetPos) {
+              const distance = calculateDistance(friendlyPos.point, targetPos.point);
+              if (distance < 10) { // 十分近い場合
+                clearSpecialMission(targetComponent);
+              } else {
+                // まだ到達していない場合は移動を続ける
+                this.updateMovementToTarget(friendlyEntity, targetStructure);
+                return;
+              }
+            }
+          }
+        }
       }
     }
-
-    // 攻撃範囲内の敵を検索
-    const enemiesInRange = this.findEnemiesInRange(friendlyEntity);
-
-    // 現在の目標が範囲外になった場合は目標変更を検討
-    if (currentTarget && !enemiesInRange.includes(currentTarget)) {
-      currentTarget = null;
-      currentTargetScore = -1;
+    
+    // 命令タイプに基づいて優先度処理
+    
+    // 1. 拠点守備命令（敵攻撃よりも優先度高）
+    if (actionType === "defense" && order && order.type === "defenseCrystal") {
+      const defenseCrystalOrder = order as DefenseCrystalOrder;
+      
+      // 守備対象のクリスタルは現状特定していないため、すべての重要な構造物を取得
+      const criticalStructures = this.entityManager.queryEntities({
+        required: ["structure", "position"]
+      }).filter(entity => 
+        entity.components["structure"] && 
+        entity.components["structure"].isCriticalForLose
+      );
+      
+      // 守備対象の構造物が見つかった場合
+      if (criticalStructures.length > 0) {
+        // 最も近い重要構造物を守備対象に選択
+        const targetStructure = criticalStructures[0];
+        const crystalPos = targetStructure.components["position"] as PositionComponent;
+        
+        if (crystalPos) {
+          // 特殊ミッションとして「拠点守備」を設定
+          setSpecialMission(targetComponent, "defense");
+          
+          // 拠点の周辺で防衛位置を決定（拠点から少し離れた位置）
+          const defensePoint = {
+            x: crystalPos.point.x,
+            y: crystalPos.point.y + 32
+          };
+          
+          this.movementSystem.moveEntityTo(friendlyEntity.id, defensePoint);
+          if (friendlyEntity.components.movement) {
+            friendlyEntity.components.movement.pathIndex = 1;
+          }
+          
+          // 拠点を直接ターゲットにはしない（移動のみ）
+          // 拠点への移動中は攻撃されても無視して拠点へ向かう
+          return;
+        }
+      }
     }
+    
+    // 2. 砲台配置命令（敵攻撃よりも優先度高）
+    if (actionType === "deployment" && order && order.type === "deploymentTarget") {
+      const deploymentOrder = order as DeploymentTargetOrder;
+      const targetStructureId = deploymentOrder.targetStructureId;
+      const targetStructure = this.entityManager.getEntity(targetStructureId);
+      
+      if (targetStructure && this.isValidTarget(targetStructure) && 
+          targetStructure.components["structure"] && 
+          canDeployUnit(targetStructure.components["structure"] as StructureComponent)) {
+        // 砲台をターゲットに設定
+        setEntityTarget(targetComponent, targetStructure.id);
+        
+        // 特殊ミッションとして「砲台配置」を設定
+        setSpecialMission(targetComponent, "deployment");
+        
+        // 砲台の位置に移動
+        const structurePos = targetStructure.components["position"] as PositionComponent;
+        if (structurePos) {
+          this.movementSystem.moveEntityTo(friendlyEntity.id, structurePos.point);
+          if (friendlyEntity.components.movement) {
+            friendlyEntity.components.movement.pathIndex = 1;
+          }
+        }
+        return;
+      }
+    }
+    
+    // 3. 敵攻撃（拠点守備/砲台配置より優先度低）
+    // 以下、通常の敵攻撃処理
+    
+    // 敵エンティティの優先度:
+    // 1. 命令を受けた敵（enemyTypeByOrder）
+    // 2. 現在のターゲット
+    // 3. 自身にダメージを加えたエンティティ（damageSources）
+    // 4. 射程内に入ってきたエンティティ
 
-    // 新しい最適な目標を選択
-    const bestTarget = this.selectBestTarget(friendlyEntity, enemiesInRange);
-    const bestTargetScore = bestTarget
-      ? this.calculateTargetScore(friendlyEntity, bestTarget)
-      : -1;
-
-    // 目標変更の判定
-    if (
-      this.shouldChangeTarget(
-        currentTarget,
-        currentTargetScore,
-        bestTarget,
-        bestTargetScore,
-      )
-    ) {
-      if (bestTarget) {
-        setEntityTarget(targetComponent, bestTarget.id);
-      } else {
-        clearTarget(targetComponent);
+    const range = forceUpdateTarget ? Infinity : (friendlyEntity.components["attack"]?.range || 0);
+    const enemiesInRange = this.findEnemiesInRange(friendlyEntity, range);
+    
+    if (enemiesInRange.length === 0) {
+      return; // 射程内に敵がいない場合は何もしない
+    }
+    
+    let targetEntity: Entity | null = null;
+    
+    // 1. 命令を受けた敵タイプの優先処理
+    if (targetComponent.enemyTypeByOrder) {
+      const orderedEnemies = enemiesInRange.filter(enemy => 
+        enemy.components["enemy"] && 
+        enemy.components["enemy"].enemyType === targetComponent.enemyTypeByOrder
+      );
+      
+      if (orderedEnemies.length > 0) {
+        targetEntity = this.selectBestTarget(friendlyEntity, orderedEnemies);
+        if (targetEntity) {
+          setEntityTarget(targetComponent, targetEntity.id);
+          this.updateMovementToTarget(friendlyEntity, targetEntity);
+          return;
+        }
+      }
+    }
+    
+    // 2. 現在のターゲットを維持（ターゲットが有効な場合）
+    const currentTarget = targetComponent.targetEntityId ? 
+      this.entityManager.getEntity(targetComponent.targetEntityId) : null;
+      
+    if (!forceUpdateTarget && currentTarget && this.isValidTarget(currentTarget)) {
+      // 敵が移動しているなら追尾する
+      if ("movement" in currentTarget.components && friendlyEntity.components.movement) {
+        this.updateMovementToTarget(friendlyEntity, currentTarget);
+      }
+      return;
+    }
+    
+    // 3. 自身にダメージを加えたエンティティを優先
+    // 注: この機能を実装するには、ダメージソースを記録するロジックが別途必要
+    // 現時点では実装されていないため、スキップしてステップ4に進む
+    
+    // 4. 射程内の敵から最適なターゲットを選択
+    targetEntity = this.selectBestTarget(friendlyEntity, enemiesInRange);
+    if (targetEntity) {
+      setEntityTarget(targetComponent, targetEntity.id);
+      if(friendlyEntity.components.movement) {
+        this.updateMovementToTarget(friendlyEntity, targetEntity);
+      }
+    }
+  }
+  
+  /**
+   * エンティティの移動先を目標に更新
+   * @param entity 移動するエンティティ
+   * @param target 目標エンティティ
+   */
+  private updateMovementToTarget(entity: Entity, target: Entity): void {
+    const targetPos = target.components["position"];
+    if (targetPos) {
+      this.movementSystem.moveEntityTo(entity.id, targetPos.point);
+      if (entity.components.movement) {
+        entity.components.movement.pathIndex = 1;
       }
     }
   }
@@ -848,8 +1006,9 @@ export class TargetingSystem {
     });
 
     return attackers.map((attacker) => {
-  const targetComponent = attacker.components["target"] as TargetComponent;
-      const enemiesInRange = this.findEnemiesInRange(attacker);
+      const targetComponent = attacker.components["target"] as TargetComponent;
+      const enemiesInRange = this.findEnemiesInRange(attacker, attacker.components["attack"].range);
+
 
       let isValidTarget = false;
       if (targetComponent.targetEntityId) {

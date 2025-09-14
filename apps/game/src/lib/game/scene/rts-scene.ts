@@ -272,6 +272,8 @@ export class GameScene extends Scene {
 
     // ゲートエンティティを検索してGameStateSystemに設定
     const allEntities = this.entityManager.getAllEntities();
+    let gateEntity = null;
+    
     for (const entity of allEntities) {
       const structureComponent = entity.components["structure"];
       if (
@@ -280,7 +282,25 @@ export class GameScene extends Scene {
       ) {
         this.gameStateSystem.setGateEntity(entity.id);
         console.log(`Gate entity set: ${entity.id}`);
+        gateEntity = entity;
         break;
+      }
+    }
+    
+    // ゲートが画面の中心に来るようにカメラの初期位置を設定
+    if (gateEntity && this.cameraControlSystem) {
+      const positionComponent = gateEntity.components["position"];
+      if (positionComponent) {
+        const gateX = (positionComponent as any).point.x;
+        const gateY = (positionComponent as any).point.y;
+        
+        // 画面サイズの半分を考慮して、ゲートが中心に来るように調整
+        const offsetX = this.cameras.main.width / 2;
+        const offsetY = this.cameras.main.height / 2;
+        
+        // カメラ位置を設定（ゲートが画面中央に表示されるよう調整）
+        this.cameraControlSystem.setCameraPosition(gateX - offsetX, gateY - offsetY);
+        console.log(`Camera centered on gate at (${gateX}, ${gateY})`);
       }
     }
   }

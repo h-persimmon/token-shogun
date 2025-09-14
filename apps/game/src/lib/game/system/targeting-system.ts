@@ -615,9 +615,9 @@ export class TargetingSystem {
     // 3. 自身にダメージを加えたエンティティ（damageSources）
     // 4. 射程内に入ってきたエンティティ
 
-    const range = forceUpdateTarget ? Infinity : (friendlyEntity.components["attack"]?.range || 0);
+    const range = forceUpdateTarget ? Infinity : targetComponent.enemyTypeByOrder ? Infinity : (friendlyEntity.components.attack?.range || 0);
     const enemiesInRange = this.findEnemiesInRange(friendlyEntity, range);
-    
+
     if (enemiesInRange.length === 0) {
       return; // 射程内に敵がいない場合は何もしない
     }

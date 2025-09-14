@@ -21,7 +21,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@kiro-rts/game": ["../../apps/game/src/index.ts"]
+      "@kiro-rts/game": ["../../apps/game/src/index.ts"],
+      "@kiro-rts/vibe-strategy": ["../../packages/vibe-strategy/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

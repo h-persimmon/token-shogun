@@ -9,62 +9,6 @@ import {
   createEntityManager,
 } from "./entities/entity-manager";
 
-/**
- * 健康なゲートを描画
- */
-const drawHealthyGate = (
-  graphics: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-): void => {
-  // 門の基本構造（石造りの門）
-  graphics.fillStyle(0x8b4513, 1.0); // 茶色の石
-  graphics.fillRect(x - 30, y - 40, 60, 80); // メインの門構造
-
-  // 門の装飾（上部のアーチ）
-  graphics.fillStyle(0x654321, 1.0); // 濃い茶色
-  graphics.fillRect(x - 35, y - 45, 70, 15); // 上部の梁
-
-  // 門の扉部分
-  graphics.fillStyle(0x2f4f4f, 1.0); // 暗いスレートグレー
-  graphics.fillRect(x - 25, y - 35, 50, 70); // 扉
-
-  // 扉の装飾（縦の線）
-  graphics.lineStyle(2, 0x1c1c1c, 1.0);
-  graphics.beginPath();
-  graphics.moveTo(x - 15, y - 30);
-  graphics.lineTo(x - 15, y + 30);
-  graphics.moveTo(x - 5, y - 30);
-  graphics.lineTo(x - 5, y + 30);
-  graphics.moveTo(x + 5, y - 30);
-  graphics.lineTo(x + 5, y + 30);
-  graphics.moveTo(x + 15, y - 30);
-  graphics.lineTo(x + 15, y + 30);
-  graphics.strokePath();
-
-  // 門の取っ手
-  graphics.fillStyle(0xffd700, 1.0); // 金色
-  graphics.fillCircle(x - 10, y, 3); // 左の取っ手
-  graphics.fillCircle(x + 10, y, 3); // 右の取っ手
-
-  // 門の周りの石壁
-  graphics.fillStyle(0x696969, 1.0); // グレーの石
-  graphics.fillRect(x - 45, y - 50, 15, 100); // 左の壁
-  graphics.fillRect(x + 30, y - 50, 15, 100); // 右の壁
-
-  // 門の上部の装飾（旗や紋章のような装飾）
-  graphics.fillStyle(0x4169e1, 1.0); // 青色の旗
-  graphics.fillRect(x - 20, y - 55, 40, 15); // 旗の部分
-
-  // 旗の装飾（十字マーク）
-  graphics.lineStyle(2, 0xffffff, 1.0);
-  graphics.beginPath();
-  graphics.moveTo(x - 10, y - 50);
-  graphics.lineTo(x + 10, y - 50);
-  graphics.moveTo(x, y - 55);
-  graphics.lineTo(x, y - 45);
-  graphics.strokePath();
-};
 
 // ゲームシーンでの使用例
 export const setupEntityManager = (scene: Phaser.Scene) => {
@@ -81,18 +25,12 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   (gateStructure as any).structureType = "gate"; // 識別用
   entityManager.addComponent(gate.id, gateStructure);
 
-  // ゲートの見た目をカスタマイズ
-  if (gate.sprite) {
-    // 元のスプライトを非表示にして、カスタムグラフィックスを作成
-    gate.sprite.setVisible(false);
-
-    // カスタムゲートグラフィックスを作成
-    const gateGraphics = scene.add.graphics();
-    drawHealthyGate(gateGraphics, 29 * 32, 10 * 32);
-
-    // カスタムグラフィックスをエンティティに関連付け
-    (gate as any).customGraphics = gateGraphics;
-  }
+  gate.sprite = scene.add.sprite(
+    gate.components.position?.point.x || 0,
+    gate.components.position?.point.y || 0,
+    "crystal",
+  );
+  gate.sprite.setScale(3.0)
 
   // 砲台攻撃ストラクチャー（Artillery）を作成
   const artilleryCannon1 = entityManager.createEntity("cannon", 200, 150, 0.5);

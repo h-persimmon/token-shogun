@@ -113,6 +113,7 @@ export class GameScene extends Scene {
     this.csvFilePath = config?.csvFilePath;
     this.orderListener = orderListener || new OrderListener();
 
+    // 🔥 FOR DEBUG
     window.scene = this;
   }
 
@@ -911,43 +912,6 @@ export class GameScene extends Scene {
   }
 
   /**
-   * ゲームを開始
-   */
-  private startGame(): void {
-    if (this.autoWaveSystem) {
-      // 自動ウェーブシステムを使用してゲームを開始
-      this.autoWaveSystem.startGame();
-    } else {
-      // フォールバック: 従来の方法でゲームを開始
-      if (this.gameStateSystem) {
-        this.gameStateSystem.startGame();
-      }
-      if (this.enemySpawnSystem) {
-        this.enemySpawnSystem.startWave(1);
-      }
-    }
-    console.log("Game started");
-  }
-
-  /**
-   * 次のウェーブを開始
-   */
-  private startNextWave(): void {
-    if (this.autoWaveSystem) {
-      // 自動ウェーブシステムを使用して次のウェーブを開始
-      this.autoWaveSystem.startNextWave();
-    } else {
-      // フォールバック: 従来の方法で次のウェーブを開始
-      if (this.enemySpawnSystem) {
-        const currentWave =
-          this.gameStateSystem?.getGameState().currentWave || 0;
-        this.enemySpawnSystem.startWave(currentWave + 1);
-      }
-    }
-    console.log("Next wave started");
-  }
-
-  /**
    * 攻撃エフェクトイベントリスナーを設定
    */
   private setupAttackEffectListeners(): void {
@@ -1030,7 +994,6 @@ export class GameScene extends Scene {
     const enemyCharachips = enemyUnitConfigs
       .map((c) => c.charachip)
       .filter(Boolean);
-    console.log(enemyCharachips);
     for (const configs of enemyUnitConfigs) {
       const charachip = configs.charachip;
       const config = configs.charachipConfig || {
@@ -1063,6 +1026,9 @@ export class GameScene extends Scene {
     this.load.image("wafu", "/game-assets/tilemaps/wafu.png");
     this.load.image("shrine1", "/game-assets/tilemaps/shrine1.png");
     this.load.tilemapTiledJSON("map", "/game-assets/tilemaps/map02.json");
+
+    // Crystal
+    this.load.image("crystal", "/game-assets/crystal.png");
   }
 
   create() {
@@ -1140,8 +1106,11 @@ export class GameScene extends Scene {
       const pos = entity.components["position"] as
         | PositionComponent
         | undefined;
+      // spriteの中央下が位置になるように設定
+
       if (pos && entity.sprite) {
         entity.sprite.setPosition(pos.point.x, pos.point.y);
+        entity.sprite.setOrigin(0.5, 1); // 中央下に設定
 
         // 初期のスプライトの向きを設定
         this.updateSpriteDirection(entity);
@@ -1252,9 +1221,6 @@ export class GameScene extends Scene {
 
     // ユニットSpriteの位置と向きをコンポーネントに合わせて更新
     this.updateEntitySprites();
-
-    // ゲートの見た目を更新
-    this.updateGateAppearance();
 
     // パフォーマンス統計を更新
     this.updatePerformanceStats();
@@ -1424,238 +1390,13 @@ export class GameScene extends Scene {
         | undefined;
       if (pos && entity.sprite) {
         // 位置を更新
+        entity.sprite.setOrigin(0.5, 1); // 中央下に設定
         entity.sprite.setPosition(pos.point.x, pos.point.y);
 
         // スプライトの向きを更新
         this.updateSpriteDirection(entity);
       }
     });
-  }
-
-  /**
-   * ゲートの見た目を体力に応じて更新
-   */
-  private updateGateAppearance(): void {
-    if (!this.entityManager) return;
-
-    const entities = this.entityManager.getAllEntities();
-    for (const entity of entities) {
-      const structureComponent = entity.components["structure"] as any;
-      const healthComponent = entity.components["health"] as any;
-
-      if (
-        structureComponent &&
-        structureComponent.structureType === "gate" &&
-        healthComponent
-      ) {
-        const customGraphics = (entity as any).customGraphics;
-        if (customGraphics) {
-          // 体力の割合を計算
-          const healthRatio =
-            healthComponent.currentHealth / healthComponent.maxHealth;
-
-          // 前回の状態を記録して、変化があった時のみ再描画
-          const lastHealthState = (entity as any).lastHealthState || "healthy";
-          let currentHealthState = "healthy";
-
-          if (healthRatio <= 0) {
-            currentHealthState = "destroyed";
-          } else if (healthRatio <= 0.3) {
-            currentHealthState = "heavy_damage";
-          } else if (healthRatio <= 0.6) {
-            currentHealthState = "light_damage";
-          }
-
-          // 状態が変化した場合のみ再描画
-          if (lastHealthState !== currentHealthState) {
-            customGraphics.clear();
-
-            switch (currentHealthState) {
-              case "destroyed":
-                this.drawDestroyedGate(customGraphics, 29 * 32, 10 * 32);
-                break;
-              case "heavy_damage":
-                this.drawDamagedGate(customGraphics, 29 * 32, 10 * 32, "heavy");
-                break;
-              case "light_damage":
-                this.drawDamagedGate(customGraphics, 29 * 32, 10 * 32, "light");
-                break;
-              case "healthy":
-                this.drawHealthyGate(customGraphics, 29 * 32, 10 * 32);
-                break;
-            }
-
-            // 状態を記録
-            (entity as any).lastHealthState = currentHealthState;
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * 健康なゲートを描画
-   */
-  private drawHealthyGate(
-    graphics: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-  ): void {
-    // 門の基本構造（石造りの門）
-    graphics.fillStyle(0x8b4513, 1.0); // 茶色の石
-    graphics.fillRect(x - 30, y - 40, 60, 80); // メインの門構造
-
-    // 門の装飾（上部のアーチ）
-    graphics.fillStyle(0x654321, 1.0); // 濃い茶色
-    graphics.fillRect(x - 35, y - 45, 70, 15); // 上部の梁
-
-    // 門の扉部分
-    graphics.fillStyle(0x2f4f4f, 1.0); // 暗いスレートグレー
-    graphics.fillRect(x - 25, y - 35, 50, 70); // 扉
-
-    // 扉の装飾（縦の線）
-    graphics.lineStyle(2, 0x1c1c1c, 1.0);
-    graphics.beginPath();
-    graphics.moveTo(x - 15, y - 30);
-    graphics.lineTo(x - 15, y + 30);
-    graphics.moveTo(x - 5, y - 30);
-    graphics.lineTo(x - 5, y + 30);
-    graphics.moveTo(x + 5, y - 30);
-    graphics.lineTo(x + 5, y + 30);
-    graphics.moveTo(x + 15, y - 30);
-    graphics.lineTo(x + 15, y + 30);
-    graphics.strokePath();
-
-    // 門の取っ手
-    graphics.fillStyle(0xffd700, 1.0); // 金色
-    graphics.fillCircle(x - 10, y, 3); // 左の取っ手
-    graphics.fillCircle(x + 10, y, 3); // 右の取っ手
-
-    // 門の周りの石壁
-    graphics.fillStyle(0x696969, 1.0); // グレーの石
-    graphics.fillRect(x - 45, y - 50, 15, 100); // 左の壁
-    graphics.fillRect(x + 30, y - 50, 15, 100); // 右の壁
-
-    // 門の上部の装飾（旗や紋章のような装飾）
-    graphics.fillStyle(0x4169e1, 1.0); // 青色の旗
-    graphics.fillRect(x - 20, y - 55, 40, 15); // 旗の部分
-
-    // 旗の装飾（十字マーク）
-    graphics.lineStyle(2, 0xffffff, 1.0);
-    graphics.beginPath();
-    graphics.moveTo(x - 10, y - 50);
-    graphics.lineTo(x + 10, y - 50);
-    graphics.moveTo(x, y - 55);
-    graphics.lineTo(x, y - 45);
-    graphics.strokePath();
-  }
-
-  /**
-   * 損傷したゲートを描画
-   */
-  private drawDamagedGate(
-    graphics: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-    damageLevel: "light" | "heavy",
-  ): void {
-    // 基本的なゲート構造を描画（色を暗くする）
-    const baseColor = damageLevel === "heavy" ? 0x654321 : 0x8b4513;
-    graphics.fillStyle(baseColor, 1.0);
-    graphics.fillRect(x - 30, y - 40, 60, 80);
-
-    // 上部の梁（ひび割れ表現）
-    graphics.fillStyle(0x4a4a4a, 1.0);
-    graphics.fillRect(x - 35, y - 45, 70, 15);
-
-    // 扉部分（損傷表現）
-    const doorColor = damageLevel === "heavy" ? 0x1c1c1c : 0x2f4f4f;
-    graphics.fillStyle(doorColor, 1.0);
-    graphics.fillRect(x - 25, y - 35, 50, 70);
-
-    // ひび割れを描画
-    graphics.lineStyle(2, 0x8b0000, 1.0); // 暗い赤色のひび
-    graphics.beginPath();
-
-    if (damageLevel === "light") {
-      // 軽度の損傷：少しのひび
-      graphics.moveTo(x - 20, y - 30);
-      graphics.lineTo(x - 10, y - 10);
-      graphics.lineTo(x - 15, y + 10);
-      graphics.moveTo(x + 10, y - 25);
-      graphics.lineTo(x + 20, y - 5);
-    } else {
-      // 重度の損傷：多くのひび
-      graphics.moveTo(x - 25, y - 35);
-      graphics.lineTo(x - 15, y - 15);
-      graphics.lineTo(x - 20, y + 5);
-      graphics.lineTo(x - 10, y + 25);
-      graphics.moveTo(x + 5, y - 30);
-      graphics.lineTo(x + 15, y - 10);
-      graphics.lineTo(x + 10, y + 10);
-      graphics.lineTo(x + 20, y + 30);
-      graphics.moveTo(x - 5, y - 20);
-      graphics.lineTo(x + 5, y - 5);
-    }
-
-    graphics.strokePath();
-
-    // 残った装飾部分
-    if (damageLevel === "light") {
-      // 取っ手（片方だけ残存）
-      graphics.fillStyle(0xb8860b, 1.0); // くすんだ金色
-      graphics.fillCircle(x - 10, y, 3);
-
-      // 石壁（一部損傷）
-      graphics.fillStyle(0x555555, 1.0);
-      graphics.fillRect(x - 45, y - 50, 15, 100);
-      graphics.fillRect(x + 30, y - 50, 15, 100);
-    } else {
-      // 重度の損傷では装飾はほとんど失われる
-      graphics.fillStyle(0x444444, 1.0);
-      graphics.fillRect(x - 45, y - 50, 15, 80); // 石壁も短くなる
-      graphics.fillRect(x + 30, y - 50, 15, 80);
-    }
-  }
-
-  /**
-   * 破壊されたゲートを描画
-   */
-  private drawDestroyedGate(
-    graphics: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-  ): void {
-    // 瓦礫の山を描画
-    graphics.fillStyle(0x2f2f2f, 1.0); // 暗いグレー
-
-    // 不規則な瓦礫の形
-    graphics.fillRect(x - 35, y + 10, 25, 30); // 左の瓦礫
-    graphics.fillRect(x - 5, y + 5, 30, 35); // 中央の瓦礫
-    graphics.fillRect(x + 15, y + 15, 20, 25); // 右の瓦礫
-    graphics.fillRect(x - 20, y + 25, 15, 15); // 小さな瓦礫
-
-    // 残った石壁の一部
-    graphics.fillStyle(0x444444, 1.0);
-    graphics.fillRect(x - 45, y - 50, 15, 60); // 左の壁（一部残存）
-    graphics.fillRect(x + 30, y - 30, 15, 40); // 右の壁（一部残存）
-
-    // 煙や塵のエフェクト（点で表現）
-    graphics.fillStyle(0x696969, 0.6);
-    for (let i = 0; i < 10; i++) {
-      const offsetX = (Math.random() - 0.5) * 60;
-      const offsetY = (Math.random() - 0.5) * 40 - 20;
-      graphics.fillCircle(x + offsetX, y + offsetY, 2);
-    }
-
-    // 破壊の印（赤い×マーク）
-    graphics.lineStyle(4, 0xff0000, 0.8);
-    graphics.beginPath();
-    graphics.moveTo(x - 30, y - 30);
-    graphics.lineTo(x + 30, y + 30);
-    graphics.moveTo(x + 30, y - 30);
-    graphics.lineTo(x - 30, y + 30);
-    graphics.strokePath();
   }
 
   /**

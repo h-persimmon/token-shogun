@@ -34,6 +34,7 @@ import { InteractionSystem } from "../system/interaction-system";
 import { MapBoundsCalculator } from "../system/map-bounds-calculator";
 import { MovementSystem } from "../system/movement-system";
 import { TargetingSystem } from "../system/targeting-system";
+import { TurretStatusSystem } from "../system/turret-status-system";
 import { spriteSheetNumber } from "../ui/sprite/character-chip";
 import { UnitInfoPopupSystem } from "../ui/unit-info/unit-info-popup-system";
 
@@ -50,6 +51,7 @@ export class GameScene extends Scene {
   private interactionSystem?: InteractionSystem;
   private autoDeploymentSystem?: AutoDeploymentSystem;
   private healthBarSystem?: HealthBarSystem;
+  private turretStatusSystem?: TurretStatusSystem;
   private autoWaveSystem?: AutoWaveSystem;
   private frameTestSystem?: FrameTestSystem;
   private cameraControlSystem?: CameraControlSystem;
@@ -246,6 +248,9 @@ export class GameScene extends Scene {
     this.healthBarSystem = new HealthBarSystem(this.entityManager, this, {
       showOnlyWhenDamaged: true, // ダメージを受けた時のみ表示
     });
+
+    // TurretStatusSystemを初期化
+    this.turretStatusSystem = new TurretStatusSystem(this.entityManager, this);
 
     // AutoWaveSystemを初期化
     this.autoWaveSystem = new AutoWaveSystem(
@@ -959,6 +964,9 @@ export class GameScene extends Scene {
       showOnlyWhenDamaged: true,
     });
 
+    // TurretStatusSystemを再初期化
+    this.turretStatusSystem = new TurretStatusSystem(this.entityManager, this);
+
     // EnemySpawnSystemにGameStateSystemの参照を再設定
     if (this.enemySpawnSystem && this.gameStateSystem) {
       this.enemySpawnSystem.setGameStateSystem(this.gameStateSystem);
@@ -1392,6 +1400,13 @@ export class GameScene extends Scene {
     if (this.healthBarSystem) {
       measureSystemUpdate("HealthBar", () => {
         this.healthBarSystem?.update();
+      });
+    }
+
+    // 8.5. TurretStatusSystem - 砲台ステータス表示
+    if (this.turretStatusSystem) {
+      measureSystemUpdate("TurretStatus", () => {
+        this.turretStatusSystem?.update();
       });
     }
 

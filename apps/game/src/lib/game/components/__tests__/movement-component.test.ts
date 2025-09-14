@@ -164,3 +164,18 @@ describe("MovementComponent - Combat Features", () => {
     });
   });
 });
+describe("MovementComponent - Structure Interaction", () => {
+  it("味方ユニットがStructureに向かう場合の戦闘停止解除をテスト", () => {
+    const movement = createMovementComponent();
+    movement.isStoppedForCombat = true;
+    movement.originalTarget = { x: 100, y: 200 };
+
+    // 戦闘停止状態を解除
+    resumeFromCombat(movement);
+
+    expect(movement.isStoppedForCombat).toBe(false);
+    expect(movement.targetPosition).toEqual({ x: 100, y: 200 });
+    expect(movement.isMoving).toBe(true);
+    expect(movement.originalTarget).toBeUndefined();
+  });
+});

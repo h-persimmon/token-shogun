@@ -1,3 +1,5 @@
+import type Phaser from "phaser";
+
 // Poolable object interface
 export interface Poolable {
   reset(): void;
@@ -119,9 +121,6 @@ export const createPoolableSprite = (
       sprite.rotation = 0;
       sprite.setScale(1, 1);
       sprite.alpha = 1;
-      if ("setTint" in sprite) {
-        (sprite as any).setTint(0xffffff);
-      }
       inUse = false;
     },
     isInUse() {

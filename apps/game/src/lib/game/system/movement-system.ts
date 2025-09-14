@@ -335,6 +335,18 @@ export class MovementSystem {
     );
     const attackRange = attackComponent.range;
 
+    // 味方ユニットがStructureに近づく場合は攻撃範囲で停止しない
+    const isTargetStructure = !!targetEntity.components.structure;
+    const isEntityFriendly = !!entity.components.unit; // unitコンポーネントがあれば味方
+
+    if (isEntityFriendly && isTargetStructure) {
+      // 味方ユニットがStructureに向かう場合は戦闘停止状態を解除
+      if (movementComponent.isStoppedForCombat) {
+        resumeFromCombat(movementComponent);
+      }
+      return;
+    }
+
     // 攻撃範囲内での停止判定
     const stopDistance = attackRange * this.combatRangeConfig.stopThreshold;
     const resumeDistance = attackRange * this.combatRangeConfig.resumeThreshold;

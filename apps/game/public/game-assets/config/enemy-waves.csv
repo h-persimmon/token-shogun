@@ -1,10 +1,11 @@
 waveNumber,enemyType,count,spawnInterval,spawnDelay,spawnX,spawnY,structureTargetPriority
-1,enemy_red_oni,5,2000,0,0,21,gate
+1,enemy_red_oni,1,2000,0,23,37,gate
+1,enemy_red_oni,5,2000,0,25,37,gate
 1,enemy_onibi_red,3,2000,0,24,37,gate
 2,enemy_blue_oni,3,1000,2000,0,21,gate
 2,enemy_onibi_blue,8,1500,0,0,22,gate
-2,enemy_yellow_oni,3,1000,2000,48,21,gate
-2,enemy_onibi_yellow,8,1500,0,48,22,gate
+2,enemy_yellow_oni,3,1000,2000,47,21,gate
+2,enemy_onibi_yellow,8,1500,0,47,22,gate
 3,enemy_red_oni,5,1000,0,24,37,gate
 3,enemy_blue_oni,5,1000,0,0,21,gate
-3,enemy_yellow_oni,5,1000,0,48,21,gate
+3,enemy_yellow_oni,5,1000,0,47,21,gate

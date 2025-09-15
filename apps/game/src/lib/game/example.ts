@@ -81,7 +81,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(artilleryCannon2.id, createTargetComponent());
 
   // 弓矢攻撃ストラクチャー（Archer Tower）を作成
-  const archerTower1 = entityManager.createEntity("soldier", 300, 200, 0.6);
+  const archerTower1 = entityManager.createEntity("bow", 300, 200, 0.08);
   entityManager.addComponent(archerTower1.id, createPositionComponent(15, 20));
   entityManager.addComponent(archerTower1.id, createHealthComponent(100));
   const archerTower1Structure = createStructureComponent(
@@ -100,12 +100,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(archerTower1.id, homingAttack1);
   entityManager.addComponent(archerTower1.id, createTargetComponent());
 
-  // 見た目を弓矢塔らしく変更
-  if (archerTower1.sprite) {
-    archerTower1.sprite.setTint(0x8b4513); // 茶色（木製の塔）
-  }
-
-  const archerTower2 = entityManager.createEntity("soldier", 300, 400, 0.6);
+  const archerTower2 = entityManager.createEntity("bow", 0, 0, 0.08);
   entityManager.addComponent(archerTower2.id, createPositionComponent(33, 20));
   entityManager.addComponent(archerTower2.id, createHealthComponent(100));
   const archerTower2Structure = createStructureComponent(
@@ -122,10 +117,6 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   homingAttack2.projectileSprite = "arrow";
   entityManager.addComponent(archerTower2.id, homingAttack2);
   entityManager.addComponent(archerTower2.id, createTargetComponent());
-
-  if (archerTower2.sprite) {
-    archerTower2.sprite.setTint(0x8b4513);
-  }
 
   // 配備可能なユニットを作成（砲台用の砲手）
   const cannoneer1 = entityManager.createEntity("soldier", 350, 200, 2);

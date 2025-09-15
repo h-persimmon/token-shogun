@@ -27,7 +27,7 @@ export default function GamePage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen">
       {/* 左側3/4 */}
       <div className="w-3/4 flex flex-col">
         {/* ゲーム画面 */}

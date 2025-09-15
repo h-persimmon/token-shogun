@@ -4,9 +4,9 @@
 
 > [!IMPORTANT]
 > This repository contains three .kiro directories.
-> - `.kiro`
-> - `apps/game/.kiro`
-> - `apps/platform/.kiro`
+> - [`.kiro`](.kiro)
+> - [`apps/game/.kiro`](apps/game/.kiro)
+> - [`apps/platform/.kiro`](apps/platform/.kiro)
 
 ## How To Play
 

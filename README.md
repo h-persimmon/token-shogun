@@ -12,10 +12,10 @@
 
 1. Clone this repository.
 ```shell
-git clone git@github.com:h-persimmon/kiro-sample-004.git
+git clone git@github.com:h-persimmon/token-shogun.git
 ```
 ```shell
-cd kiro-sample-004
+cd token-shogun
 ```
 
 2. Install the packages.

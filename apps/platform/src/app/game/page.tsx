@@ -35,7 +35,7 @@ export default function GamePage() {
           <div className="border-2 border-gray-600 shadow-lg">
             <iframe
               ref={iframeRef}
-              src={process.env.NEXT_PUBLIC_GAME_URL}
+              src={process.env.NEXT_PUBLIC_GAME_URL || "http://localhost:4000"}
               width={32 * 32}
               height="500"
               sandbox="allow-scripts allow-same-origin"

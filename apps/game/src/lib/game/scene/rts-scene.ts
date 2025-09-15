@@ -1117,12 +1117,25 @@ export class GameScene extends Scene {
     }
 
     // ユニット用のアセットをロード（4行6列のスプライトシート）
-    this.load.spritesheet("soldier", "/game-assets/slime.png", {
+    this.load.spritesheet("bushi_bow_blue", "/charachips/bushi_bow_blue.png", {
+      frameWidth: 20, // 各フレームの幅
+      frameHeight: 28, // 各フレームの高さ
+    });
+    this.load.spritesheet("bushi_bow_red", "/charachips/bushi_bow_red.png", {
+      frameWidth: 20, // 各フレームの幅
+      frameHeight: 28, // 各フレームの高さ
+    });
+    this.load.spritesheet("bushi", "/charachips/bushi.png", {
       frameWidth: 20, // 各フレームの幅
       frameHeight: 28, // 各フレームの高さ
       // 4行6列（24フレーム）のスプライトシート
     });
-    this.load.spritesheet("enemy", "/game-assets/slime6.png", {
+    this.load.spritesheet("ninja_man", "/charachips/ninja_man.png", {
+      frameWidth: 20, // 各フレームの幅
+      frameHeight: 28, // 各フレームの高さ
+      // 4行6列（24フレーム）のスプライトシート
+    });
+        this.load.spritesheet("ninja_woman", "/charachips/ninja_woman.png", {
       frameWidth: 20, // 各フレームの幅
       frameHeight: 28, // 各フレームの高さ
       // 4行6列（24フレーム）のスプライトシート

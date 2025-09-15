@@ -137,13 +137,13 @@ export const DEFAULT_ZOOM_CONFIG: ZoomConfig = {
   enabled: true,
   minZoom: 0.5,
   maxZoom: 3.0,
-  wheelSensitivity: 0.1,
-  pinchSensitivity: 1.0,
+  wheelSensitivity: 0.15,
+  pinchSensitivity: 1.2,
   smoothZoom: true,
-  smoothZoomFactor: 0.15,
-  smoothZoomDuration: 200,
-  smoothZoomEase: 'Power2',
-  maxConcurrentAnimations: 1,
+  smoothZoomFactor: 0.5,
+  smoothZoomDuration: 10,
+  smoothZoomEase: 'Linear',
+  maxConcurrentAnimations: 10,
 };
 
 /**

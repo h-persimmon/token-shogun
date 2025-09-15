@@ -119,7 +119,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(archerTower2.id, createTargetComponent());
 
   // 配備可能なユニットを作成（砲台用の砲手）
-  const cannoneer1 = entityManager.createEntity("soldier", 350, 200, 2);
+  const cannoneer1 = entityManager.createEntity("ninja_man", 350, 200, 2);
   entityManager.addComponent(cannoneer1.id, createPositionComponent(22, 13));
   entityManager.addComponent(cannoneer1.id, createHealthComponent(60));
 
@@ -135,7 +135,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(cannoneer1.id, createMovementComponent(80)); // 移動可能
   cannoneer1.sprite?.setTint(0x4169e1); // 青色（砲手）
 
-  const cannoneer2 = entityManager.createEntity("soldier", 350, 400, 2);
+  const cannoneer2 = entityManager.createEntity("ninja_woman", 350, 400, 2);
   entityManager.addComponent(cannoneer2.id, createPositionComponent(23, 13));
   entityManager.addComponent(cannoneer2.id, createHealthComponent(60));
 
@@ -152,7 +152,7 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   cannoneer2.sprite?.setTint(0x4169e1);
 
   // 配備可能なユニットを作成（弓矢塔用の弓兵）
-  const archer1 = entityManager.createEntity("soldier", 450, 200, 2);
+  const archer1 = entityManager.createEntity("bushi_bow_blue", 450, 200, 2);
   entityManager.addComponent(archer1.id, createPositionComponent(26, 13));
   entityManager.addComponent(archer1.id, createHealthComponent(50));
 
@@ -168,8 +168,8 @@ export const setupEntityManager = (scene: Phaser.Scene) => {
   entityManager.addComponent(archer1.id, createMovementComponent(120)); // 高速移動
   archer1.sprite?.setTint(0x00ff00); // 緑色（弓兵）
 
-  const archer2 = entityManager.createEntity("soldier", 450, 400, 2);
-  entityManager.addComponent(archer2.id, createPositionComponent(27, 13));
+  const archer2 = entityManager.createEntity("bushi_bow_red", 450, 400, 2);
+  entityManager.addComponent(archer2.id, createPositionComponent(25, 13));
   entityManager.addComponent(archer2.id, createHealthComponent(50));
 
   const archerAttack2 = createAttackComponent(20, 80, 1.2);

@@ -1110,6 +1110,7 @@ export class GameScene extends Scene {
     });
     // サイズ小さくして読み取り
     this.load.image("cannon", "/game-assets/cannon.png");
+    this.load.image("bow", "/game-assets/bow.png");
     this.load.image("basic", "/game-assets/tilemaps/basic.png");
     this.load.image("wafu", "/game-assets/tilemaps/wafu.png");
     this.load.image("shrine1", "/game-assets/tilemaps/shrine1.png");

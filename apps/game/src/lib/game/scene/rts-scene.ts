@@ -108,12 +108,16 @@ export class GameScene extends Scene {
     entity.sprite.setAngle(healthComponent?.isDead ? 90 : 0);
   }
 
+  // 難易度タイプ定義
+  private difficulty: 'easy' | 'medium' | 'hard' | 'very-hard' = 'easy';
+  
   constructor(
-    config?: { csvFilePath?: string },
+    config?: { csvFilePath?: string; difficulty?: 'easy' | 'medium' | 'hard' | 'very-hard' },
     orderListener?: OrderListener,
   ) {
     super({ key: "GameScene" });
     this.csvFilePath = config?.csvFilePath;
+    this.difficulty = config?.difficulty || 'easy';
     this.orderListener = orderListener || new OrderListener();
 
     // 🔥 FOR DEBUG
@@ -377,6 +381,7 @@ export class GameScene extends Scene {
       padding: { x: 5, y: 2 },
     });
     this.fpsText.setScrollFactor(0); // カメラに追従
+    this.fpsText.setDepth(150); // 深度を高く設定してグラデーションよりも上に表示
 
     // パフォーマンス統計表示を作成
     this.performanceText = this.add.text(10, 40, "", {
@@ -386,6 +391,7 @@ export class GameScene extends Scene {
       padding: { x: 5, y: 2 },
     });
     this.performanceText.setScrollFactor(0); // カメラに追従
+    this.performanceText.setDepth(150); // 深度を高く設定してグラデーションよりも上に表示
     
     // 初期表示設定
     this.fpsText.setVisible(this.showPerformanceStats);
@@ -450,6 +456,7 @@ export class GameScene extends Scene {
     // 画面右上に固定するUIコンテナを作成
     const uiContainer = this.add.container(0, 0);
     uiContainer.setScrollFactor(0); // カメラに追従させる設定
+    uiContainer.setDepth(100); // 深度を高く設定してグラデーションよりも上に表示
     
     // 画面右上のUIの位置を設定
     const padding = 0; // 画面端からの余白
@@ -478,6 +485,9 @@ export class GameScene extends Scene {
     // 画像の原点を右上に設定し、位置調整
     this.gameStateUI.wafuWindow.setOrigin(1, 0); // 右上を原点に設定
     
+    // 深度を設定してグラデーションより上に表示
+    this.gameStateUI.wafuWindow.setDepth(100);
+    
     // コンテナに追加
     uiContainer.add(this.gameStateUI.wafuWindow);
 
@@ -502,6 +512,7 @@ export class GameScene extends Scene {
     );
     this.gameStateUI.waveText.setOrigin(1, 0); // 右揃えに設定
     this.gameStateUI.waveText.setScrollFactor(0); // カメラに追従
+    this.gameStateUI.waveText.setDepth(100); // 深度を高く設定
     uiContainer.add(this.gameStateUI.waveText);
 
     // 敵数表示 - 右揃え
@@ -516,6 +527,7 @@ export class GameScene extends Scene {
     );
     this.gameStateUI.enemyCountText.setOrigin(1, 0); // 右揃えに設定
     this.gameStateUI.enemyCountText.setScrollFactor(0); // カメラに追従
+    this.gameStateUI.enemyCountText.setDepth(100); // 深度を高く設定
     uiContainer.add(this.gameStateUI.enemyCountText);
 
     // 門の体力表示 - 右揃え
@@ -530,6 +542,7 @@ export class GameScene extends Scene {
     );
     this.gameStateUI.gateHealthText.setOrigin(1, 0); // 右揃えに設定
     this.gameStateUI.gateHealthText.setScrollFactor(0); // カメラに追従
+    this.gameStateUI.gateHealthText.setDepth(100); // 深度を高く設定
     uiContainer.add(this.gameStateUI.gateHealthText);
 
     // 体力バーの最大幅を設定
@@ -546,6 +559,7 @@ export class GameScene extends Scene {
     );
     this.gameStateUI.gateHealthBar.setOrigin(1, 0.5); // 右揃えに設定
     this.gameStateUI.gateHealthBar.setScrollFactor(0); // カメラに追従
+    this.gameStateUI.gateHealthBar.setDepth(100); // 深度を高く設定
     uiContainer.add(this.gameStateUI.gateHealthBar);
 
     // スコア表示 - 右揃え
@@ -560,6 +574,7 @@ export class GameScene extends Scene {
     );
     this.gameStateUI.scoreText.setOrigin(1, 0); // 右揃えに設定
     this.gameStateUI.scoreText.setScrollFactor(0); // カメラに追従
+    this.gameStateUI.scoreText.setDepth(100); // 深度を高く設定
     uiContainer.add(this.gameStateUI.scoreText);
 
     // ゲーム状態システムのイベントリスナーを設定
@@ -665,6 +680,8 @@ export class GameScene extends Scene {
     this.gameStateUI.victoryScreen = this.add.container(centerX, centerY);
     // カメラに追従させる設定
     this.gameStateUI.victoryScreen.setScrollFactor(0);
+    // 深度を設定して常に最前面に表示
+    this.gameStateUI.victoryScreen.setDepth(200);
 
     // 背景
     const background = this.add.rectangle(0, 0, 400, 300, 0x000000, 0.8);
@@ -725,6 +742,8 @@ export class GameScene extends Scene {
     this.gameStateUI.gameOverScreen = this.add.container(centerX, centerY);
     // カメラに追従させる設定
     this.gameStateUI.gameOverScreen.setScrollFactor(0);
+    // 深度を設定して常に最前面に表示
+    this.gameStateUI.gameOverScreen.setDepth(200);
 
     // 背景
     const background = this.add.rectangle(0, 0, 400, 300, 0x000000, 0.8);
@@ -1123,6 +1142,65 @@ export class GameScene extends Scene {
     this.load.image("crystal", "/game-assets/crystal.png");
   }
 
+  /**
+   * 難易度に応じて背景をカスタマイズする
+   */
+  private setupBackgroundByDifficulty(): void {
+    // 画面サイズを取得
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    
+    // グラデーションオーバーレイを作成
+    const overlay = this.add.graphics();
+    
+    // 難易度に応じてグラデーションを設定
+    switch (this.difficulty) {
+      case 'medium': 
+        // 夕方の設定: オレンジ～赤～暗い青のグラデーション
+        overlay.fillGradientStyle(
+          0xff7e00, 0xff7e00, // 上部: オレンジ
+          0x27006b, 0x27006b, // 下部: 暗い青
+          0.3, 0.3, 0.3, 0.3  // 透明度
+        );
+        console.log("Setting medium difficulty background: Evening");
+        break;
+        
+      case 'hard':
+        // 夜の設定: 濃い青～暗い紫のグラデーション
+        overlay.fillGradientStyle(
+          0x001a33, 0x001a33, // 上部: 濃い青
+          0x17002a, 0x17002a, // 下部: 暗い紫
+          0.45, 0.45, 0.45, 0.45  // 透明度
+        );
+        console.log("Setting hard difficulty background: Night");
+        break;
+        
+      case 'very-hard':
+        // 狂った赤い夜の設定: 濃い赤～黒のグラデーション
+        overlay.fillGradientStyle(
+          0x880000, 0x880000, // 上部: 濃い赤
+          0x330000, 0x330000, // 下部: 赤黒
+          0.6, 0.6, 0.6, 0.6  // 透明度
+        );
+        
+        console.log("Setting very-hard difficulty background: Blood Night");
+        break;
+        
+      default:
+        // 'easy'の場合は通常背景（オーバーレイなし）
+        console.log("Using default background for easy difficulty");
+        return;
+    }
+    
+    // グラデーションの四角形を画面全体に描画
+    overlay.fillRect(0, 0, width, height);
+    
+    // オーバーレイをカメラに固定（スクロールしないように）
+    overlay.setScrollFactor(0);
+    
+    // オーバーレイの深度を低く設定（UI要素より下に表示）
+  }
+
   create() {
     this.plugins.installScenePlugin(
       "PhaserNavMeshPlugin",
@@ -1181,6 +1259,9 @@ export class GameScene extends Scene {
     if (this.orderListener && this.entityManager) {
       this.orderListener.setEntityManager(this.entityManager);
     }
+    
+    // 難易度に応じた背景設定
+    this.setupBackgroundByDifficulty();
   }
   // ユニットSpriteを表示
   private displayUnitSprites() {

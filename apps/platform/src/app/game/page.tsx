@@ -27,21 +27,17 @@ export default function GamePage() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-gray-100">
       {/* 左側3/4 */}
       <div className="w-3/4 flex flex-col">
         {/* ゲーム画面 */}
         <div className="flex-1 p-4 flex items-center justify-center">
-          <div className="border-2 border-gray-600 shadow-lg">
-            <iframe
-              ref={iframeRef}
-              src={process.env.NEXT_PUBLIC_GAME_URL || "http://localhost:4000"}
-              width={32 * 32}
-              height="500"
-              sandbox="allow-scripts allow-same-origin"
-              style={{ border: 'none' }}
-            />
-          </div>
+          <iframe
+            ref={iframeRef}
+            src={process.env.NEXT_PUBLIC_GAME_URL}
+            style={{ width: "1140px", height: "600px" }}
+            sandbox="allow-scripts allow-same-origin"
+          />
         </div>
         {/* チャット欄 */}
         <div className="p-4">

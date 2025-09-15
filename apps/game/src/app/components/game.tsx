@@ -25,9 +25,9 @@ export default function Game({ csvFilePath, difficulty = 'easy' }: GameProps) {
     if (!isMounted) return;
     const gameConfig: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      width: 32 * 32,
-      height: 500,
       backgroundColor: "#2E2E2E",
+      width: 1140,
+      height: 800,
       scene: new GameScene({ csvFilePath, difficulty }, orderListenerRef.current),
       physics: {
         default: "arcade",

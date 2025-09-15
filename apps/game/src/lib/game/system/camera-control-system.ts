@@ -4,8 +4,11 @@ import type {
   CameraState,
   DragState,
   MapBounds,
+  ZoomState,
+  PinchState,
+  ZoomConfig,
 } from "./camera-control-types";
-import { DEFAULT_CAMERA_CONTROL_CONFIG } from "./camera-control-types";
+import { DEFAULT_CAMERA_CONTROL_CONFIG, DEFAULT_ZOOM_CONFIG } from "./camera-control-types";
 
 /**
  * カメラ制御システムのエラータイプ
@@ -29,6 +32,9 @@ export class CameraControlSystem {
   private cameraState!: CameraState;
   private dragState!: DragState;
   private config!: CameraControlConfig;
+  private zoomState!: ZoomState;
+  private pinchState!: PinchState;
+  private zoomConfig!: ZoomConfig;
 
   /**
    * CameraControlSystemのコンストラクタ
@@ -39,7 +45,7 @@ export class CameraControlSystem {
   constructor(
     scene: Phaser.Scene,
     mapBounds: MapBounds,
-    config?: Partial<CameraControlConfig>,
+    config?: Partial<CameraControlConfig & ZoomConfig>,
   ) {
     try {
       // 入力パラメータのバリデーション
@@ -52,6 +58,12 @@ export class CameraControlSystem {
       // 設定をデフォルト値とマージ
       this.config = {
         ...DEFAULT_CAMERA_CONTROL_CONFIG,
+        ...config,
+      };
+
+      // ズーム設定をデフォルト値とマージ
+      this.zoomConfig = {
+        ...DEFAULT_ZOOM_CONFIG,
         ...config,
       };
 
@@ -70,6 +82,27 @@ export class CameraControlSystem {
         lastX: 0,
         lastY: 0,
         isActive: false,
+      };
+
+      // ズーム状態を初期化
+      this.zoomState = {
+        targetZoom: this.camera.zoom,
+        minZoom: this.zoomConfig.minZoom,
+        maxZoom: this.zoomConfig.maxZoom,
+        isZooming: false,
+        zoomCenter: { x: 0, y: 0 },
+        activeZoomTween: undefined,
+        activePanTween: undefined,
+        onAnimationComplete: undefined,
+      };
+
+      // ピンチ状態を初期化
+      this.pinchState = {
+        isActive: false,
+        initialDistance: 0,
+        initialZoom: this.camera.zoom,
+        centerPoint: { x: 0, y: 0 },
+        touches: [],
       };
 
       // 入力ハンドラーを設定
@@ -137,9 +170,9 @@ export class CameraControlSystem {
       }
 
       this.mapBounds = bounds;
-      this.cameraState.canMove = this.shouldEnableCameraMovement();
+      this.cameraState.canMove = this.shouldEnableCameraMovement(this.camera.zoom);
 
-      // 境界が変更された場合、カメラ位置を再調整
+      // 境界が変更された場合、カメラ位置を再調整（ズーム考慮）
       this.clampCameraPosition();
 
       // カメラ移動可能性が変更された場合、カーソル状態も更新
@@ -220,6 +253,273 @@ export class CameraControlSystem {
   }
 
   /**
+   * 現在のズームレベルを取得
+   * @returns 現在のズームレベル
+   */
+  public getZoomLevel(): number {
+    return this.camera.zoom;
+  }
+
+  /**
+   * ズームの最小値と最大値を設定
+   * @param minZoom 最小ズームレベル
+   * @param maxZoom 最大ズームレベル
+   */
+  public setZoomLimits(minZoom: number, maxZoom: number): void {
+    try {
+      // ズーム制限のバリデーション
+      if (!this.validateZoomLimits(minZoom, maxZoom)) {
+        this.logError(
+          CameraControlError.INVALID_CAMERA_POSITION,
+          "Invalid zoom limits provided",
+          { minZoom, maxZoom },
+        );
+        return;
+      }
+
+      // ズーム制限を更新
+      this.zoomConfig.minZoom = minZoom;
+      this.zoomConfig.maxZoom = maxZoom;
+      this.zoomState.minZoom = minZoom;
+      this.zoomState.maxZoom = maxZoom;
+
+      // 現在のズームレベルが新しい制限を超えている場合はクランプ
+      const currentZoom = this.getZoomLevel();
+      const clampedZoom = this.clampZoomLevel(currentZoom);
+      
+      if (clampedZoom !== currentZoom) {
+        this.camera.setZoom(clampedZoom);
+        this.zoomState.targetZoom = clampedZoom;
+        this.logInfo("Current zoom level clamped to new limits", { 
+          oldZoom: currentZoom, 
+          newZoom: clampedZoom 
+        });
+      }
+
+      this.logInfo("Zoom limits updated successfully", { minZoom, maxZoom });
+    } catch (error) {
+      this.logError(
+        CameraControlError.INVALID_CAMERA_POSITION,
+        "Failed to set zoom limits",
+        error,
+      );
+    }
+  }
+
+  /**
+   * ズームレベルを設定
+   * @param zoom 設定するズームレベル
+   * @param centerX ズーム中心のX座標（オプション、スクリーン座標）
+   * @param centerY ズーム中心のY座標（オプション、スクリーン座標）
+   * @param onComplete アニメーション完了時のコールバック（オプション）
+   */
+  public setZoomLevel(
+    zoom: number, 
+    centerX?: number, 
+    centerY?: number, 
+    onComplete?: () => void
+  ): void {
+    try {
+      if (!this.zoomConfig.enabled) {
+        this.logInfo("Zoom is disabled, ignoring setZoomLevel request");
+        return;
+      }
+
+      // ズームレベルをバリデーションしてクランプ
+      const clampedZoom = this.clampZoomLevel(zoom);
+      
+      if (clampedZoom !== zoom) {
+        this.logInfo("Zoom level clamped", { requested: zoom, actual: clampedZoom });
+      }
+
+      // ズーム中心が指定されている場合、その点を中心にズーム
+      if (centerX !== undefined && centerY !== undefined) {
+        if (this.zoomConfig.smoothZoom) {
+          // スムーズズームを使用
+          this.smoothZoomToPoint(clampedZoom, centerX, centerY, onComplete);
+        } else {
+          // 即座にズーム
+          this.zoomToPoint(clampedZoom, centerX, centerY);
+          if (onComplete) {
+            onComplete();
+          }
+        }
+      } else {
+        // 中心が指定されていない場合
+        if (this.zoomConfig.smoothZoom) {
+          // 画面中央を中心にスムーズズーム
+          const centerScreenX = this.camera.width / 2;
+          const centerScreenY = this.camera.height / 2;
+          this.smoothZoomToPoint(clampedZoom, centerScreenX, centerScreenY, onComplete);
+        } else {
+          // 即座にズーム
+          this.camera.setZoom(clampedZoom);
+          if (onComplete) {
+            onComplete();
+          }
+        }
+      }
+
+      // ズーム状態を更新（スムーズズームでない場合のみ）
+      if (!this.zoomConfig.smoothZoom) {
+        this.zoomState.targetZoom = clampedZoom;
+        this.zoomState.isZooming = false;
+      }
+
+      // ズームレベル変更後にカメラ移動可否を再評価
+      // 要件5.3: ズームレベル変更時の境界システム統合
+      this.cameraState.canMove = this.shouldEnableCameraMovement(clampedZoom);
+
+      this.logInfo("Zoom level set successfully", { 
+        zoom: clampedZoom, 
+        centerX, 
+        centerY, 
+        smoothZoom: this.zoomConfig.smoothZoom 
+      });
+    } catch (error) {
+      this.logError(
+        CameraControlError.INVALID_CAMERA_POSITION,
+        "Failed to set zoom level",
+        error,
+      );
+      // エラー時はアニメーションをクリーンアップして安全なズームレベルに戻す
+      this.cleanupZoomAnimations();
+      this.camera.setZoom(1.0);
+      this.zoomState.targetZoom = 1.0;
+    }
+  }
+
+  /**
+   * ズームイン
+   * @param factor ズーム係数（デフォルト: 1.2）
+   * @param centerX ズーム中心のX座標（オプション、スクリーン座標）
+   * @param centerY ズーム中心のY座標（オプション、スクリーン座標）
+   * @param onComplete アニメーション完了時のコールバック（オプション）
+   */
+  public zoomIn(
+    factor: number = 1.2, 
+    centerX?: number, 
+    centerY?: number, 
+    onComplete?: () => void
+  ): void {
+    try {
+      if (!this.zoomConfig.enabled) {
+        this.logInfo("Zoom is disabled, ignoring zoomIn request");
+        return;
+      }
+
+      // 係数のバリデーション
+      if (!Number.isFinite(factor) || factor <= 1.0) {
+        this.logError(
+          CameraControlError.INVALID_CAMERA_POSITION,
+          "Invalid zoom factor for zoomIn",
+          { factor },
+        );
+        return;
+      }
+
+      const currentZoom = this.getZoomLevel();
+      const newZoom = currentZoom * factor;
+      
+      this.setZoomLevel(newZoom, centerX, centerY, onComplete);
+      
+      this.logInfo("Zoom in executed", { 
+        oldZoom: currentZoom, 
+        targetZoom: newZoom, 
+        factor,
+        smoothZoom: this.zoomConfig.smoothZoom
+      });
+    } catch (error) {
+      this.logError(
+        CameraControlError.INVALID_CAMERA_POSITION,
+        "Failed to zoom in",
+        error,
+      );
+    }
+  }
+
+  /**
+   * ズームアウト
+   * @param factor ズーム係数（デフォルト: 0.8）
+   * @param centerX ズーム中心のX座標（オプション、スクリーン座標）
+   * @param centerY ズーム中心のY座標（オプション、スクリーン座標）
+   * @param onComplete アニメーション完了時のコールバック（オプション）
+   */
+  public zoomOut(
+    factor: number = 0.8, 
+    centerX?: number, 
+    centerY?: number, 
+    onComplete?: () => void
+  ): void {
+    try {
+      if (!this.zoomConfig.enabled) {
+        this.logInfo("Zoom is disabled, ignoring zoomOut request");
+        return;
+      }
+
+      // 係数のバリデーション
+      if (!Number.isFinite(factor) || factor <= 0 || factor >= 1.0) {
+        this.logError(
+          CameraControlError.INVALID_CAMERA_POSITION,
+          "Invalid zoom factor for zoomOut",
+          { factor },
+        );
+        return;
+      }
+
+      const currentZoom = this.getZoomLevel();
+      const newZoom = currentZoom * factor;
+      
+      this.setZoomLevel(newZoom, centerX, centerY, onComplete);
+      
+      this.logInfo("Zoom out executed", { 
+        oldZoom: currentZoom, 
+        targetZoom: newZoom, 
+        factor,
+        smoothZoom: this.zoomConfig.smoothZoom
+      });
+    } catch (error) {
+      this.logError(
+        CameraControlError.INVALID_CAMERA_POSITION,
+        "Failed to zoom out",
+        error,
+      );
+    }
+  }
+
+  /**
+   * ズームレベルをデフォルト（1.0）にリセット
+   * @param onComplete アニメーション完了時のコールバック（オプション）
+   */
+  public resetZoom(onComplete?: () => void): void {
+    try {
+      if (!this.zoomConfig.enabled) {
+        this.logInfo("Zoom is disabled, ignoring resetZoom request");
+        return;
+      }
+
+      const currentZoom = this.getZoomLevel();
+      this.setZoomLevel(1.0, undefined, undefined, onComplete);
+      
+      this.logInfo("Zoom reset to default", { 
+        oldZoom: currentZoom, 
+        targetZoom: 1.0,
+        smoothZoom: this.zoomConfig.smoothZoom
+      });
+    } catch (error) {
+      this.logError(
+        CameraControlError.INVALID_CAMERA_POSITION,
+        "Failed to reset zoom",
+        error,
+      );
+      // エラー時はアニメーションをクリーンアップして強制的にデフォルトズームに設定
+      this.cleanupZoomAnimations();
+      this.camera.setZoom(1.0);
+      this.zoomState.targetZoom = 1.0;
+    }
+  }
+
+  /**
    * システムを破棄
    * イベントリスナーをクリーンアップ
    */
@@ -246,10 +546,38 @@ export class CameraControlSystem {
           "mouseleave",
           this.handleMouseLeave,
         );
+        // ホイールイベントリスナーを削除
+        this.scene.game.canvas.removeEventListener(
+          "wheel",
+          this.handleWheelEvent,
+        );
+        // タッチイベントリスナーを削除
+        this.scene.game.canvas.removeEventListener(
+          "touchstart",
+          this.handleTouchStart,
+        );
+        this.scene.game.canvas.removeEventListener(
+          "touchmove",
+          this.handleTouchMove,
+        );
+        this.scene.game.canvas.removeEventListener(
+          "touchend",
+          this.handleTouchEnd,
+        );
+        this.scene.game.canvas.removeEventListener(
+          "touchcancel",
+          this.handleTouchEnd,
+        );
       }
 
       // ドラッグ状態をリセット
       this.resetDragState();
+
+      // ピンチ状態をリセット
+      this.resetPinchState();
+
+      // アクティブなズームアニメーションをクリーンアップ
+      this.cleanupZoomAnimations();
 
       // カーソルをデフォルト状態に戻す
       this.setCursorState("default");
@@ -279,6 +607,41 @@ export class CameraControlSystem {
 
       // ポインターアップイベント
       this.scene.input.on("pointerup", this.handlePointerUp, this);
+
+      // マウスホイールイベント（ズーム機能用）
+      // 要件2.1, 2.2, 2.3, 2.4: マウスホイールによるズーム制御
+      if (this.scene.game.canvas && this.zoomConfig.enabled) {
+        this.scene.game.canvas.addEventListener(
+          "wheel",
+          this.handleWheelEvent,
+          { passive: false }
+        );
+      }
+
+      // タッチイベント（ピンチズーム機能用）
+      // 要件1.1, 1.2, 1.3, 1.4, 4.1: ピンチジェスチャーによるズーム制御
+      if (this.scene.game.canvas && this.zoomConfig.enabled) {
+        this.scene.game.canvas.addEventListener(
+          "touchstart",
+          this.handleTouchStart,
+          { passive: false }
+        );
+        this.scene.game.canvas.addEventListener(
+          "touchmove",
+          this.handleTouchMove,
+          { passive: false }
+        );
+        this.scene.game.canvas.addEventListener(
+          "touchend",
+          this.handleTouchEnd,
+          { passive: false }
+        );
+        this.scene.game.canvas.addEventListener(
+          "touchcancel",
+          this.handleTouchEnd,
+          { passive: false }
+        );
+      }
 
       // グローバルなマウスイベント（画面外でのドラッグ継続のため）
       // 要件1.4: ドラッグ操作中にマウスカーソルがゲーム画面外に出てもカメラの移動は継続される
@@ -323,6 +686,11 @@ export class CameraControlSystem {
         return;
       }
       console.log("🔥", "handlePointerDown", pointer)
+
+      // ピンチジェスチャーがアクティブな場合はドラッグを無効化（ジェスチャー競合回避）
+      if (this.pinchState.isActive) {
+        return;
+      }
 
       // ポインター情報のバリデーション
       if (!this.validatePointer(pointer)) {
@@ -370,6 +738,11 @@ export class CameraControlSystem {
         !this.cameraState.canMove ||
         !this.dragState.isActive
       ) {
+        return;
+      }
+
+      // ピンチジェスチャーがアクティブな場合はドラッグを無効化（ジェスチャー競合回避）
+      if (this.pinchState.isActive) {
         return;
       }
 
@@ -508,6 +881,470 @@ export class CameraControlSystem {
   };
 
   /**
+   * マウスホイールイベントハンドラー
+   * 要件2.1, 2.2, 2.3, 2.4, 4.2, 4.3に対応
+   * @param event ホイールイベント
+   * @private
+   */
+  private handleWheelEvent = (event: WheelEvent): void => {
+    try {
+      // ズーム機能が無効の場合は処理しない
+      if (!this.zoomConfig.enabled || !this.config.enabled) {
+        return;
+      }
+
+      // ドラッグ中またはピンチジェスチャー中はズーム操作を無効化（ジェスチャー競合回避）
+      if (this.cameraState.isDragging || this.dragState.isActive || this.pinchState.isActive) {
+        return;
+      }
+
+      // デフォルトのスクロール動作を防止
+      event.preventDefault();
+
+      // ホイールイベントのバリデーション
+      if (!this.validateWheelEvent(event)) {
+        this.logError(
+          CameraControlError.INPUT_HANDLER_ERROR,
+          "Invalid wheel event data",
+          event,
+        );
+        return;
+      }
+
+      // キャンバスの境界を取得してマウス座標を計算
+      const canvas = this.scene.game.canvas;
+      if (!canvas) {
+        this.logError(
+          CameraControlError.INPUT_HANDLER_ERROR,
+          "Canvas not available for wheel event",
+        );
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+
+      // マウス座標がキャンバス内にあることを確認
+      // 要件2.4: マウスカーソルがゲーム領域上にある時のみホイールイベントを処理
+      if (mouseX < 0 || mouseX > canvas.width || mouseY < 0 || mouseY > canvas.height) {
+        return;
+      }
+
+      // ホイールの方向を判定してズーム方向を決定
+      // 要件2.1: マウスホイールを上にスクロール → ズームイン
+      // 要件2.2: マウスホイールを下にスクロール → ズームアウト
+      const wheelDelta = -event.deltaY; // deltaYは下方向が正なので反転
+      const zoomDirection = wheelDelta > 0 ? 1 : -1;
+
+      // 現在のズームレベルを取得
+      const currentZoom = this.getZoomLevel();
+
+      // ズーム係数を計算（感度設定を適用）
+      const zoomFactor = 1 + (this.zoomConfig.wheelSensitivity * zoomDirection);
+      const newZoom = currentZoom * zoomFactor;
+
+      // ズームレベルをバリデーションしてクランプ
+      const clampedZoom = this.clampZoomLevel(newZoom);
+
+      // ズームレベルが変更される場合のみ処理を実行
+      if (Math.abs(clampedZoom - currentZoom) > 0.001) {
+        // マウスカーソル位置を中心にズーム実行
+        // 要件4.2: マウスホイールでズームする際はマウスカーソル位置を中心にズーム
+        if (this.zoomConfig.smoothZoom) {
+          // スムーズズームの場合（アニメーション状態は内部で管理）
+          this.smoothZoomToPoint(clampedZoom, mouseX, mouseY);
+        } else {
+          // 即座にズーム
+          this.zoomState.isZooming = true;
+          this.zoomState.zoomCenter = { x: mouseX, y: mouseY };
+          this.zoomToPoint(clampedZoom, mouseX, mouseY);
+          this.zoomState.isZooming = false;
+        }
+
+        this.logInfo("Mouse wheel zoom executed", {
+          wheelDelta,
+          zoomDirection,
+          oldZoom: currentZoom,
+          newZoom: clampedZoom,
+          mousePos: { x: mouseX, y: mouseY }
+        });
+      }
+
+      // 要件2.3: 連続したホイール操作でもスムーズに動作
+      // （各イベントを個別に処理することで自然な累積効果を実現）
+
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Mouse wheel zoom error",
+        error,
+      );
+      // エラー時はズーム状態をリセット
+      this.zoomState.isZooming = false;
+    }
+  };
+
+  /**
+   * タッチ開始イベントハンドラー
+   * 要件1.1, 1.2, 1.3, 1.4, 4.1: ピンチジェスチャーの検出と開始
+   * @param event タッチイベント
+   * @private
+   */
+  private handleTouchStart = (event: TouchEvent): void => {
+    try {
+      // ズーム機能が無効の場合は処理しない
+      if (!this.zoomConfig.enabled || !this.config.enabled) {
+        return;
+      }
+
+      // タッチイベントのバリデーション
+      if (!this.validateTouchEvent(event)) {
+        this.logError(
+          CameraControlError.INPUT_HANDLER_ERROR,
+          "Invalid touch event data in touch start",
+          event,
+        );
+        return;
+      }
+
+      const touches = Array.from(event.touches);
+      
+      // 2本指のタッチでピンチジェスチャーを開始
+      if (touches.length === 2) {
+        // ドラッグ操作を無効化（ジェスチャー競合回避）
+        if (this.cameraState.isDragging || this.dragState.isActive) {
+          this.resetDragState();
+        }
+
+        // デフォルトのタッチ動作を防止
+        event.preventDefault();
+
+        // キャンバスの境界を取得
+        const canvas = this.scene.game.canvas;
+        if (!canvas) {
+          this.logError(
+            CameraControlError.INPUT_HANDLER_ERROR,
+            "Canvas not available for touch start",
+          );
+          return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+
+        // タッチポイントをキャンバス座標系に変換
+        const touch1 = {
+          id: touches[0].identifier,
+          x: touches[0].clientX - rect.left,
+          y: touches[0].clientY - rect.top,
+        };
+        const touch2 = {
+          id: touches[1].identifier,
+          x: touches[1].clientX - rect.left,
+          y: touches[1].clientY - rect.top,
+        };
+
+        // ピンチ状態を初期化
+        const initialDistance = this.calculatePinchDistance(touch1, touch2);
+        const centerPoint = this.calculatePinchCenter(touch1, touch2);
+
+        this.pinchState = {
+          isActive: true,
+          initialDistance: initialDistance,
+          initialZoom: this.getZoomLevel(),
+          centerPoint: centerPoint,
+          touches: [touch1, touch2],
+        };
+
+        this.logInfo("Pinch gesture started", {
+          initialDistance,
+          initialZoom: this.pinchState.initialZoom,
+          centerPoint,
+          touches: [touch1, touch2],
+        });
+      } else if (touches.length > 2) {
+        // 3本指以上の場合はピンチジェスチャーを無効化
+        this.resetPinchState();
+      }
+      // 1本指の場合は通常のドラッグ操作として処理（既存の処理に委ねる）
+
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Touch start error",
+        error,
+      );
+      this.resetPinchState();
+    }
+  };
+
+  /**
+   * タッチ移動イベントハンドラー
+   * 要件1.1, 1.2, 1.3, 1.4, 4.1: ピンチジェスチャーの更新処理
+   * @param event タッチイベント
+   * @private
+   */
+  private handleTouchMove = (event: TouchEvent): void => {
+    try {
+      // ズーム機能が無効またはピンチジェスチャーが非アクティブの場合は処理しない
+      if (!this.zoomConfig.enabled || !this.config.enabled || !this.pinchState.isActive) {
+        return;
+      }
+
+      // タッチイベントのバリデーション
+      if (!this.validateTouchEvent(event)) {
+        this.logError(
+          CameraControlError.INPUT_HANDLER_ERROR,
+          "Invalid touch event data in touch move",
+          event,
+        );
+        return;
+      }
+
+      const touches = Array.from(event.touches);
+
+      // 2本指のタッチが継続している場合のみ処理
+      if (touches.length === 2) {
+        // デフォルトのタッチ動作を防止
+        event.preventDefault();
+
+        // キャンバスの境界を取得
+        const canvas = this.scene.game.canvas;
+        if (!canvas) {
+          this.logError(
+            CameraControlError.INPUT_HANDLER_ERROR,
+            "Canvas not available for touch move",
+          );
+          return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+
+        // タッチポイントをキャンバス座標系に変換
+        const touch1 = {
+          id: touches[0].identifier,
+          x: touches[0].clientX - rect.left,
+          y: touches[0].clientY - rect.top,
+        };
+        const touch2 = {
+          id: touches[1].identifier,
+          x: touches[1].clientX - rect.left,
+          y: touches[1].clientY - rect.top,
+        };
+
+        // ピンチジェスチャーを更新
+        this.updatePinchGesture([touch1, touch2]);
+
+      } else {
+        // タッチポイント数が変わった場合はピンチジェスチャーを終了
+        this.resetPinchState();
+      }
+
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Touch move error",
+        error,
+      );
+      this.resetPinchState();
+    }
+  };
+
+  /**
+   * タッチ終了イベントハンドラー
+   * 要件1.4: ピンチジェスチャーの終了処理
+   * @param event タッチイベント
+   * @private
+   */
+  private handleTouchEnd = (event: TouchEvent): void => {
+    try {
+      // ピンチジェスチャーがアクティブでない場合は処理不要
+      if (!this.pinchState.isActive) {
+        return;
+      }
+
+      // タッチイベントのバリデーション
+      if (!this.validateTouchEvent(event)) {
+        this.logError(
+          CameraControlError.INPUT_HANDLER_ERROR,
+          "Invalid touch event data in touch end",
+          event,
+        );
+        return;
+      }
+
+      const touches = Array.from(event.touches);
+
+      // タッチポイントが2本未満になった場合はピンチジェスチャーを終了
+      if (touches.length < 2) {
+        this.logInfo("Pinch gesture ended", {
+          finalZoom: this.getZoomLevel(),
+          initialZoom: this.pinchState.initialZoom,
+          zoomChange: this.getZoomLevel() - this.pinchState.initialZoom,
+        });
+
+        this.resetPinchState();
+      }
+
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Touch end error",
+        error,
+      );
+      this.resetPinchState();
+    }
+  };
+
+  /**
+   * ピンチジェスチャーの更新処理
+   * 要件1.1, 1.2, 1.3, 4.1: ピンチ距離の変化に基づくズーム調整
+   * @param touches 現在のタッチポイント配列
+   * @private
+   */
+  private updatePinchGesture(touches: Array<{ id: number; x: number; y: number }>): void {
+    try {
+      if (!this.pinchState.isActive || touches.length !== 2) {
+        return;
+      }
+
+      // 現在のピンチ距離と中心点を計算
+      const currentDistance = this.calculatePinchDistance(touches[0], touches[1]);
+      const currentCenter = this.calculatePinchCenter(touches[0], touches[1]);
+
+      // ピンチ距離の変化率を計算
+      const distanceRatio = currentDistance / this.pinchState.initialDistance;
+      
+      // 新しいズームレベルを計算（感度を適用）
+      const baseZoomChange = (distanceRatio - 1.0) * this.zoomConfig.pinchSensitivity;
+      const newZoom = this.pinchState.initialZoom * (1.0 + baseZoomChange);
+
+      // ズームレベルをバリデーションしてクランプ
+      const clampedZoom = this.clampZoomLevel(newZoom);
+
+      // ズームレベルが変更される場合のみ処理を実行
+      const currentZoom = this.getZoomLevel();
+      if (Math.abs(clampedZoom - currentZoom) > 0.001) {
+        // ピンチ中心点を基準にズーム実行
+        // 要件4.1: ピンチジェスチャーでズームする際は2つのタッチポイントの中心を基準にズーム
+        if (this.zoomConfig.smoothZoom) {
+          // スムーズズームの場合
+          this.smoothZoomToPoint(clampedZoom, currentCenter.x, currentCenter.y);
+        } else {
+          // 即座にズーム
+          this.zoomState.isZooming = true;
+          this.zoomState.zoomCenter = currentCenter;
+          this.zoomToPoint(clampedZoom, currentCenter.x, currentCenter.y);
+          this.zoomState.isZooming = false;
+        }
+
+        this.logInfo("Pinch zoom updated", {
+          distanceRatio,
+          baseZoomChange,
+          oldZoom: currentZoom,
+          newZoom: clampedZoom,
+          centerPoint: currentCenter,
+          currentDistance,
+          initialDistance: this.pinchState.initialDistance,
+        });
+      }
+
+      // ピンチ状態を更新
+      this.pinchState.touches = touches;
+      this.pinchState.centerPoint = currentCenter;
+
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Pinch gesture update error",
+        error,
+      );
+      this.resetPinchState();
+    }
+  }
+
+  /**
+   * 2つのタッチポイント間の距離を計算
+   * @param touch1 最初のタッチポイント
+   * @param touch2 2番目のタッチポイント
+   * @returns タッチポイント間の距離
+   * @private
+   */
+  private calculatePinchDistance(
+    touch1: { x: number; y: number },
+    touch2: { x: number; y: number }
+  ): number {
+    try {
+      const deltaX = touch2.x - touch1.x;
+      const deltaY = touch2.y - touch1.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      
+      // 最小距離を設定（ゼロ除算防止）
+      return Math.max(distance, 1.0);
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Failed to calculate pinch distance",
+        error,
+      );
+      return 1.0; // エラー時はデフォルト距離を返す
+    }
+  }
+
+  /**
+   * 2つのタッチポイントの中心点を計算
+   * @param touch1 最初のタッチポイント
+   * @param touch2 2番目のタッチポイント
+   * @returns タッチポイントの中心点
+   * @private
+   */
+  private calculatePinchCenter(
+    touch1: { x: number; y: number },
+    touch2: { x: number; y: number }
+  ): { x: number; y: number } {
+    try {
+      return {
+        x: (touch1.x + touch2.x) / 2,
+        y: (touch1.y + touch2.y) / 2,
+      };
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Failed to calculate pinch center",
+        error,
+      );
+      return { x: 0, y: 0 }; // エラー時はデフォルト中心点を返す
+    }
+  }
+
+  /**
+   * ピンチ状態をリセット
+   * @private
+   */
+  private resetPinchState(): void {
+    try {
+      this.pinchState = {
+        isActive: false,
+        initialDistance: 0,
+        initialZoom: this.camera.zoom,
+        centerPoint: { x: 0, y: 0 },
+        touches: [],
+      };
+
+      this.logInfo("Pinch state reset");
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Failed to reset pinch state",
+        error,
+      );
+      // 強制的にピンチ状態をリセット
+      this.pinchState.isActive = false;
+      this.pinchState.touches = [];
+    }
+  }
+
+  /**
    * カメラ位置を更新（デルタ計算付き）
    * 要件1.2, 3.1, 3.2, 3.3, 3.4, 3.5に対応
    * @param deltaX X方向の移動量
@@ -542,8 +1379,8 @@ export class CameraControlSystem {
         newY = currentY + (targetY - currentY) * this.config.smoothingFactor;
       }
 
-      // 境界内にクランプ（要件3.1, 3.2, 3.3, 3.4対応）
-      const clampedPosition = this.clampToBounds(newX, newY);
+      // 境界内にクランプ（要件3.1, 3.2, 3.3, 3.4対応、ズーム考慮）
+      const clampedPosition = this.clampToBounds(newX, newY, this.camera.zoom);
 
       // カメラ位置を設定
       this.camera.setScroll(clampedPosition.x, clampedPosition.y);
@@ -571,33 +1408,39 @@ export class CameraControlSystem {
   }
 
   /**
-   * 指定された座標を境界内にクランプ
-   * 要件3.1, 3.2, 3.3, 3.4に対応
+   * 指定された座標を境界内にクランプ（ズームレベル対応）
+   * 要件3.1, 3.2, 3.3, 3.4, 4.3, 4.4, 5.3, 5.4に対応
    * @param x X座標
    * @param y Y座標
+   * @param zoomLevel 使用するズームレベル（オプション、未指定時は現在のズームレベル）
    * @returns クランプされた座標
    * @private
    */
-  private clampToBounds(x: number, y: number): { x: number; y: number } {
+  private clampToBounds(x: number, y: number, zoomLevel?: number): { x: number; y: number } {
     if (!this.cameraState.canMove) {
       return { x: this.camera.scrollX, y: this.camera.scrollY };
     }
 
-    const viewportWidth = this.camera.width;
-    const viewportHeight = this.camera.height;
+    // ズームレベルを取得（指定されていない場合は現在のズームレベル）
+    const currentZoom = zoomLevel !== undefined ? zoomLevel : this.camera.zoom;
+    
+    // ズームレベルに応じたビューポートサイズを計算
+    // 要件4.3, 4.4: ズームレベルに応じた境界計算
+    const effectiveViewportWidth = this.camera.width / currentZoom;
+    const effectiveViewportHeight = this.camera.height / currentZoom;
     const padding = this.config.boundaryPadding;
 
-    // 境界を計算
-    // 要件3.1: 左端の境界制限
+    // ズーム対応境界を計算
+    // 要件3.1: 左端の境界制限（ズーム考慮）
     const minX = -padding;
-    // 要件3.2: 右端の境界制限
-    const maxX = Math.max(minX, this.mapBounds.width - viewportWidth + padding);
-    // 要件3.3: 上端の境界制限
+    // 要件3.2: 右端の境界制限（ズーム考慮）
+    const maxX = Math.max(minX, this.mapBounds.width - effectiveViewportWidth + padding);
+    // 要件3.3: 上端の境界制限（ズーム考慮）
     const minY = -padding;
-    // 要件3.4: 下端の境界制限
+    // 要件3.4: 下端の境界制限（ズーム考慮）
     const maxY = Math.max(
       minY,
-      this.mapBounds.height - viewportHeight + padding,
+      this.mapBounds.height - effectiveViewportHeight + padding,
     );
 
     // 座標を境界内にクランプ
@@ -608,7 +1451,8 @@ export class CameraControlSystem {
   }
 
   /**
-   * カメラ位置を境界内に制限
+   * カメラ位置を境界内に制限（ズームレベル対応）
+   * 要件5.3, 5.4: ズーム操作時の境界制限
    * @private
    */
   private clampCameraPosition(): void {
@@ -617,10 +1461,12 @@ export class CameraControlSystem {
         return;
       }
 
-      // 現在の位置をクランプ
+      // 現在のズームレベルを考慮して位置をクランプ
+      // 要件5.3: ズーム操作がマップ境界を尊重する
       const clampedPosition = this.clampToBounds(
         this.camera.scrollX,
         this.camera.scrollY,
+        this.camera.zoom
       );
 
       // 位置が変更された場合のみ更新
@@ -631,6 +1477,12 @@ export class CameraControlSystem {
         this.camera.setScroll(clampedPosition.x, clampedPosition.y);
         this.cameraState.x = clampedPosition.x;
         this.cameraState.y = clampedPosition.y;
+
+        this.logInfo("Camera position clamped for zoom level", {
+          originalPos: { x: this.camera.scrollX, y: this.camera.scrollY },
+          clampedPos: clampedPosition,
+          zoomLevel: this.camera.zoom
+        });
       }
     } catch (error) {
       this.logError(
@@ -723,18 +1575,23 @@ export class CameraControlSystem {
   }
 
   /**
-   * カメラ移動を有効にするかどうかを判定
+   * カメラ移動を有効にするかどうかを判定（ズームレベル考慮）
+   * 要件5.3: ズームレベルに応じたカメラ移動可否の判定
+   * @param zoomLevel 判定に使用するズームレベル（オプション、未指定時は現在のズームレベル）
    * @returns カメラ移動を有効にする場合true
    * @private
    */
-  private shouldEnableCameraMovement(): boolean {
-    const viewportWidth = this.camera.width;
-    const viewportHeight = this.camera.height;
+  private shouldEnableCameraMovement(zoomLevel?: number): boolean {
+    const currentZoom = zoomLevel !== undefined ? zoomLevel : this.camera.zoom;
+    
+    // ズームレベルに応じた効果的なビューポートサイズを計算
+    const effectiveViewportWidth = this.camera.width / currentZoom;
+    const effectiveViewportHeight = this.camera.height / currentZoom;
 
-    // マップサイズが画面サイズより大きい場合のみ移動を有効化
+    // マップサイズが効果的な画面サイズより大きい場合のみ移動を有効化
     return (
-      this.mapBounds.width > viewportWidth ||
-      this.mapBounds.height > viewportHeight
+      this.mapBounds.width > effectiveViewportWidth ||
+      this.mapBounds.height > effectiveViewportHeight
     );
   }
 
@@ -847,6 +1704,63 @@ export class CameraControlSystem {
   }
 
   /**
+   * ホイールイベントのバリデーション
+   * @param event ホイールイベント
+   * @returns バリデーション結果
+   * @private
+   */
+  private validateWheelEvent(event: WheelEvent): boolean {
+    if (!event) {
+      return false;
+    }
+
+    return (
+      typeof event.clientX === "number" &&
+      typeof event.clientY === "number" &&
+      typeof event.deltaY === "number" &&
+      Number.isFinite(event.clientX) &&
+      Number.isFinite(event.clientY) &&
+      Number.isFinite(event.deltaY)
+    );
+  }
+
+  /**
+   * タッチイベントのバリデーション
+   * @param event タッチイベント
+   * @returns バリデーション結果
+   * @private
+   */
+  private validateTouchEvent(event: TouchEvent): boolean {
+    try {
+      if (!event || !event.touches) {
+        return false;
+      }
+
+      // 各タッチポイントの基本的なバリデーション
+      for (let i = 0; i < event.touches.length; i++) {
+        const touch = event.touches[i];
+        if (!touch ||
+            typeof touch.identifier !== "number" ||
+            typeof touch.clientX !== "number" ||
+            typeof touch.clientY !== "number" ||
+            !Number.isFinite(touch.clientX) ||
+            !Number.isFinite(touch.clientY)) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      this.logError(
+        CameraControlError.INPUT_HANDLER_ERROR,
+        "Touch event validation error",
+        error,
+      );
+      return false;
+    }
+  }
+
+  /**
    * 安全な状態での初期化
    * 通常の初期化に失敗した場合の復旧処理
    * @param scene Phaserシーン
@@ -897,6 +1811,34 @@ export class CameraControlSystem {
         isActive: false,
       };
 
+      // 安全なズーム設定で初期化
+      this.zoomConfig = {
+        ...DEFAULT_ZOOM_CONFIG,
+        enabled: false, // 安全のため無効化
+        ...config,
+      };
+
+      // 安全なズーム状態で初期化
+      this.zoomState = {
+        targetZoom: this.camera?.zoom || 1.0,
+        minZoom: this.zoomConfig.minZoom,
+        maxZoom: this.zoomConfig.maxZoom,
+        isZooming: false,
+        zoomCenter: { x: 0, y: 0 },
+        activeZoomTween: undefined,
+        activePanTween: undefined,
+        onAnimationComplete: undefined,
+      };
+
+      // 安全なピンチ状態で初期化
+      this.pinchState = {
+        isActive: false,
+        initialDistance: 0,
+        initialZoom: this.camera?.zoom || 1.0,
+        centerPoint: { x: 0, y: 0 },
+        touches: [],
+      };
+
       this.logError(
         CameraControlError.INITIALIZATION_ERROR,
         "Initialized in safe mode due to errors",
@@ -944,6 +1886,389 @@ export class CameraControlSystem {
   private logInfo(message: string, details?: any): void {
     if (this.config?.enabled && process.env.NODE_ENV === "development") {
       console.info(`[CameraControlSystem] ${message}`, details);
+    }
+  }
+
+  /**
+   * ズーム制限のバリデーション
+   * @param minZoom 最小ズームレベル
+   * @param maxZoom 最大ズームレベル
+   * @returns バリデーション結果
+   * @private
+   */
+  private validateZoomLimits(minZoom: number, maxZoom: number): boolean {
+    return (
+      typeof minZoom === "number" &&
+      typeof maxZoom === "number" &&
+      Number.isFinite(minZoom) &&
+      Number.isFinite(maxZoom) &&
+      minZoom > 0 &&
+      maxZoom > 0 &&
+      minZoom <= maxZoom
+    );
+  }
+
+  /**
+   * ズームレベルを制限内にクランプ
+   * @param zoom ズームレベル
+   * @returns クランプされたズームレベル
+   * @private
+   */
+  private clampZoomLevel(zoom: number): number {
+    if (!Number.isFinite(zoom) || zoom <= 0) {
+      return 1.0; // デフォルトズームレベル
+    }
+    
+    return Math.max(this.zoomState.minZoom, Math.min(this.zoomState.maxZoom, zoom));
+  }
+
+  /**
+   * 指定した点を中心にズーム（境界制限対応）
+   * 要件4.3, 4.4, 5.4: ズーム中心点が境界近くでも適切に動作
+   * @param zoom ズームレベル
+   * @param screenX スクリーン座標のX
+   * @param screenY スクリーン座標のY
+   * @private
+   */
+  private zoomToPoint(zoom: number, screenX: number, screenY: number): void {
+    try {
+      // スクリーン座標をワールド座標に変換（ズーム前の状態で）
+      const worldPoint = this.camera.getWorldPoint(screenX, screenY);
+      
+      // 現在のカメラ位置とズームレベルを保存
+      const oldZoom = this.camera.zoom;
+      const oldScrollX = this.camera.scrollX;
+      const oldScrollY = this.camera.scrollY;
+      
+      // 新しいズームレベルを設定
+      this.camera.setZoom(zoom);
+      
+      // ズーム後の同じワールド座標がスクリーン上の同じ位置に来るようにカメラを調整
+      const newWorldPoint = this.camera.getWorldPoint(screenX, screenY);
+      const deltaX = worldPoint.x - newWorldPoint.x;
+      const deltaY = worldPoint.y - newWorldPoint.y;
+      
+      // カメラ位置を調整
+      const newScrollX = oldScrollX + deltaX;
+      const newScrollY = oldScrollY + deltaY;
+      
+      // 新しいズームレベルを考慮した境界チェックを行う
+      // 要件4.4: 境界制約を考慮したズーム操作
+      const clampedPosition = this.clampToBounds(newScrollX, newScrollY, zoom);
+      
+      // 境界制限により理想的な位置に配置できない場合の調整
+      // 要件4.3: ズーム中心点が境界近くでも機能する
+      if (clampedPosition.x !== newScrollX || clampedPosition.y !== newScrollY) {
+        this.logInfo("Zoom position adjusted due to boundary constraints", {
+          idealPos: { x: newScrollX, y: newScrollY },
+          clampedPos: clampedPosition,
+          zoomLevel: zoom
+        });
+      }
+      
+      this.camera.setScroll(clampedPosition.x, clampedPosition.y);
+      
+      // カメラ状態を更新
+      this.cameraState.x = clampedPosition.x;
+      this.cameraState.y = clampedPosition.y;
+      
+      this.logInfo("Zoom to point completed", {
+        zoom,
+        screenX,
+        screenY,
+        worldPoint: { x: worldPoint.x, y: worldPoint.y },
+        finalCameraPos: { x: clampedPosition.x, y: clampedPosition.y },
+        boundaryAdjusted: clampedPosition.x !== newScrollX || clampedPosition.y !== newScrollY
+      });
+    } catch (error) {
+      this.logError(
+        CameraControlError.CAMERA_UPDATE_ERROR,
+        "Failed to zoom to point",
+        error,
+      );
+      // エラー時は単純なズーム設定にフォールバック
+      this.camera.setZoom(zoom);
+      // エラー時も境界チェックを実行
+      this.clampCameraPosition();
+    }
+  }
+
+  /**
+   * 指定した点を中心にスムーズズームを実行
+   * 要件6.1, 6.2, 6.3, 6.4に対応
+   * @param zoom 設定するズームレベル
+   * @param screenX スクリーン座標のX位置
+   * @param screenY スクリーン座標のY位置
+   * @param onComplete アニメーション完了時のコールバック（オプション）
+   * @private
+   */
+  private smoothZoomToPoint(
+    zoom: number, 
+    screenX: number, 
+    screenY: number, 
+    onComplete?: () => void
+  ): void {
+    try {
+      // 既存のアニメーションをクリーンアップ（要件6.4: アニメーション状態管理）
+      this.cleanupZoomAnimations();
+
+      // 同時実行制限チェック
+      if (this.zoomState.isZooming && this.zoomConfig.maxConcurrentAnimations <= 1) {
+        this.logInfo("Zoom animation already in progress, skipping new request");
+        return;
+      }
+
+      // スクリーン座標をワールド座標に変換（ズーム前の状態で）
+      const worldPoint = this.camera.getWorldPoint(screenX, screenY);
+      
+      // アニメーション状態を設定
+      this.zoomState.isZooming = true;
+      this.zoomState.targetZoom = zoom;
+      this.zoomState.zoomCenter = { x: screenX, y: screenY };
+      this.zoomState.onAnimationComplete = onComplete;
+
+      // 現在のカメラ状態を保存
+      const startZoom = this.camera.zoom;
+      const startScrollX = this.camera.scrollX;
+      const startScrollY = this.camera.scrollY;
+
+      // アニメーション設定
+      const duration = this.zoomConfig.smoothZoomDuration;
+      const ease = this.zoomConfig.smoothZoomEase;
+
+      // ズーム完了後の目標カメラ位置を計算
+      const zoomRatio = zoom / startZoom;
+      const targetScrollX = worldPoint.x - (screenX / zoom);
+      const targetScrollY = worldPoint.y - (screenY / zoom);
+
+      // 新しいズームレベルを考慮した境界チェックを適用した最終位置
+      // 要件5.4: ズーム操作中の境界競合処理
+      const clampedPosition = this.clampToBounds(targetScrollX, targetScrollY, zoom);
+      
+      // 境界制限により理想的な位置に配置できない場合のログ
+      if (clampedPosition.x !== targetScrollX || clampedPosition.y !== targetScrollY) {
+        this.logInfo("Smooth zoom position adjusted due to boundary constraints", {
+          idealPos: { x: targetScrollX, y: targetScrollY },
+          clampedPos: clampedPosition,
+          zoomLevel: zoom
+        });
+      }
+
+      // ズームアニメーションを作成（要件6.1: スムーズなズームトランジション）
+      this.zoomState.activeZoomTween = this.scene.tweens.add({
+        targets: this.camera,
+        zoom: zoom,
+        duration: duration,
+        ease: ease,
+        onUpdate: () => {
+          // ズーム中の境界チェック
+          this.updateCameraBoundsForZoom();
+        },
+        onComplete: () => {
+          this.zoomState.activeZoomTween = undefined;
+          this.checkAnimationCompletion();
+        },
+        onStop: () => {
+          this.zoomState.activeZoomTween = undefined;
+          this.handleAnimationInterruption();
+        }
+      });
+
+      // パンアニメーションを作成（要件6.2: スムーズなフォーカスポイント移行）
+      this.zoomState.activePanTween = this.scene.tweens.add({
+        targets: this.camera,
+        scrollX: clampedPosition.x,
+        scrollY: clampedPosition.y,
+        duration: duration,
+        ease: ease,
+        onUpdate: () => {
+          // カメラ状態を更新
+          this.cameraState.x = this.camera.scrollX;
+          this.cameraState.y = this.camera.scrollY;
+        },
+        onComplete: () => {
+          this.zoomState.activePanTween = undefined;
+          this.checkAnimationCompletion();
+        },
+        onStop: () => {
+          this.zoomState.activePanTween = undefined;
+          this.handleAnimationInterruption();
+        }
+      });
+
+      this.logInfo("Smooth zoom to point initiated", {
+        zoom,
+        screenX,
+        screenY,
+        worldPoint: { x: worldPoint.x, y: worldPoint.y },
+        targetPosition: clampedPosition,
+        duration,
+        ease
+      });
+
+    } catch (error) {
+      this.logError(
+        CameraControlError.CAMERA_UPDATE_ERROR,
+        "Failed to smooth zoom to point",
+        error,
+      );
+      // エラー時はアニメーション状態をクリーンアップして即座のズームにフォールバック
+      this.cleanupZoomAnimations();
+      this.zoomToPoint(zoom, screenX, screenY);
+    }
+  }
+
+  /**
+   * アクティブなズームアニメーションをクリーンアップ
+   * 要件6.4: アニメーション状態管理とクリーンアップ
+   * @private
+   */
+  private cleanupZoomAnimations(): void {
+    try {
+      // ズームアニメーションを停止
+      if (this.zoomState.activeZoomTween) {
+        this.zoomState.activeZoomTween.stop();
+        this.zoomState.activeZoomTween = undefined;
+      }
+
+      // パンアニメーションを停止
+      if (this.zoomState.activePanTween) {
+        this.zoomState.activePanTween.stop();
+        this.zoomState.activePanTween = undefined;
+      }
+
+      // アニメーション状態をリセット
+      this.zoomState.isZooming = false;
+      this.zoomState.onAnimationComplete = undefined;
+
+      this.logInfo("Zoom animations cleaned up");
+    } catch (error) {
+      this.logError(
+        CameraControlError.CAMERA_UPDATE_ERROR,
+        "Failed to cleanup zoom animations",
+        error,
+      );
+      // 強制的にアニメーション状態をリセット
+      this.zoomState.isZooming = false;
+      this.zoomState.activeZoomTween = undefined;
+      this.zoomState.activePanTween = undefined;
+      this.zoomState.onAnimationComplete = undefined;
+    }
+  }
+
+  /**
+   * アニメーション完了をチェックしてコールバックを実行
+   * 要件6.3: アニメーション完了の正確な検出
+   * @private
+   */
+  private checkAnimationCompletion(): void {
+    try {
+      // 両方のアニメーションが完了した場合
+      if (!this.zoomState.activeZoomTween && !this.zoomState.activePanTween) {
+        this.zoomState.isZooming = false;
+
+        // 最終的な境界チェック
+        this.clampCameraPosition();
+
+        // ズームレベル変更後にカメラ移動可否を再評価
+        // 要件5.3: ズームアニメーション完了時の境界システム統合
+        this.cameraState.canMove = this.shouldEnableCameraMovement(this.camera.zoom);
+
+        // 完了コールバックを実行
+        if (this.zoomState.onAnimationComplete) {
+          const callback = this.zoomState.onAnimationComplete;
+          this.zoomState.onAnimationComplete = undefined;
+          callback();
+        }
+
+        this.logInfo("Smooth zoom animation completed", {
+          finalZoom: this.camera.zoom,
+          finalPosition: { x: this.camera.scrollX, y: this.camera.scrollY }
+        });
+      }
+    } catch (error) {
+      this.logError(
+        CameraControlError.CAMERA_UPDATE_ERROR,
+        "Failed to check animation completion",
+        error,
+      );
+      // エラー時は強制的に完了状態にする
+      this.zoomState.isZooming = false;
+      this.zoomState.onAnimationComplete = undefined;
+    }
+  }
+
+  /**
+   * アニメーション中断時の処理
+   * 要件6.4: アニメーション中断時の適切な状態管理
+   * @private
+   */
+  private handleAnimationInterruption(): void {
+    try {
+      // 中断されたアニメーションの状態をクリーンアップ
+      this.zoomState.isZooming = false;
+      this.zoomState.onAnimationComplete = undefined;
+
+      // カメラ位置を境界内に調整
+      this.clampCameraPosition();
+
+      this.logInfo("Zoom animation interrupted and cleaned up");
+    } catch (error) {
+      this.logError(
+        CameraControlError.CAMERA_UPDATE_ERROR,
+        "Failed to handle animation interruption",
+        error,
+      );
+    }
+  }
+
+  /**
+   * ズームレベル変更時のカメラ境界更新（ズーム対応）
+   * 要件5.3, 5.4, 6.4: ズーム中の境界管理と競合処理
+   * @private
+   */
+  private updateCameraBoundsForZoom(): void {
+    try {
+      // ズーム中は境界チェックを軽量化（パフォーマンス考慮）
+      if (this.zoomState.isZooming) {
+        // 現在のカメラ位置とズームレベルを取得
+        const currentX = this.camera.scrollX;
+        const currentY = this.camera.scrollY;
+        const currentZoom = this.camera.zoom;
+        
+        // ズームレベルに応じた効果的なビューポートサイズを計算
+        const effectiveViewportWidth = this.camera.width / currentZoom;
+        const effectiveViewportHeight = this.camera.height / currentZoom;
+        const padding = this.config.boundaryPadding;
+        
+        // 簡易境界チェック（ズーム考慮）
+        const minX = -padding;
+        const maxX = this.mapBounds.width - effectiveViewportWidth + padding;
+        const minY = -padding;
+        const maxY = this.mapBounds.height - effectiveViewportHeight + padding;
+        
+        if (currentX < minX || currentX > maxX || currentY < minY || currentY > maxY) {
+          // 境界外の場合のみ詳細なクランプを実行
+          // 要件5.4: ズーム操作中の境界競合を適切に処理
+          const clampedPosition = this.clampToBounds(currentX, currentY, currentZoom);
+          this.camera.setScroll(clampedPosition.x, clampedPosition.y);
+          this.cameraState.x = clampedPosition.x;
+          this.cameraState.y = clampedPosition.y;
+          
+          this.logInfo("Camera bounds updated during zoom", {
+            originalPos: { x: currentX, y: currentY },
+            clampedPos: clampedPosition,
+            zoomLevel: currentZoom,
+            effectiveViewport: { width: effectiveViewportWidth, height: effectiveViewportHeight }
+          });
+        }
+      }
+    } catch (error) {
+      this.logError(
+        CameraControlError.CAMERA_UPDATE_ERROR,
+        "Failed to update camera bounds during zoom",
+        error,
+      );
     }
   }
 }

@@ -74,7 +74,7 @@ export const createEntityManager = (
   ): Entity => {
     const sprite = scene.add.sprite(x, y, textureKey, 0);
     sprite.setScale(ratio);
-    const entityId = `entity_${state.nextEntityId++}`;
+    const entityId = `${textureKey}_${state.nextEntityId++}`;
     const entity = createEntity(entityId, sprite);
 
     state.entities.set(entityId, entity);

@@ -5,9 +5,12 @@ import type {
   CameraState,
   DragState,
   MapBounds,
+  PinchState,
   ViewportBounds,
+  ZoomConfig,
+  ZoomState,
 } from "../camera-control-types";
-import { DEFAULT_CAMERA_CONTROL_CONFIG } from "../camera-control-types";
+import { DEFAULT_CAMERA_CONTROL_CONFIG, DEFAULT_ZOOM_CONFIG } from "../camera-control-types";
 
 describe("Camera Control Types", () => {
   it("should define MapBounds interface correctly", () => {
@@ -96,5 +99,74 @@ describe("Camera Control Types", () => {
 
     expect(viewportBounds.width).toBe(800);
     expect(viewportBounds.height).toBe(600);
+  });
+
+  it("should define ZoomState interface correctly", () => {
+    const zoomState: ZoomState = {
+      targetZoom: 1.5,
+      minZoom: 0.5,
+      maxZoom: 3.0,
+      isZooming: true,
+      zoomCenter: { x: 100, y: 200 },
+    };
+
+    expect(zoomState.targetZoom).toBe(1.5);
+    expect(zoomState.minZoom).toBe(0.5);
+    expect(zoomState.maxZoom).toBe(3.0);
+    expect(zoomState.isZooming).toBe(true);
+    expect(zoomState.zoomCenter.x).toBe(100);
+    expect(zoomState.zoomCenter.y).toBe(200);
+  });
+
+  it("should define PinchState interface correctly", () => {
+    const pinchState: PinchState = {
+      isActive: true,
+      initialDistance: 150,
+      initialZoom: 1.0,
+      centerPoint: { x: 300, y: 400 },
+      touches: [
+        { id: 1, x: 250, y: 350 },
+        { id: 2, x: 350, y: 450 },
+      ],
+    };
+
+    expect(pinchState.isActive).toBe(true);
+    expect(pinchState.initialDistance).toBe(150);
+    expect(pinchState.initialZoom).toBe(1.0);
+    expect(pinchState.centerPoint.x).toBe(300);
+    expect(pinchState.centerPoint.y).toBe(400);
+    expect(pinchState.touches).toHaveLength(2);
+    expect(pinchState.touches[0].id).toBe(1);
+    expect(pinchState.touches[1].x).toBe(350);
+  });
+
+  it("should define ZoomConfig interface correctly", () => {
+    const zoomConfig: ZoomConfig = {
+      enabled: true,
+      minZoom: 0.25,
+      maxZoom: 4.0,
+      wheelSensitivity: 0.2,
+      pinchSensitivity: 1.5,
+      smoothZoom: true,
+      smoothZoomFactor: 0.1,
+    };
+
+    expect(zoomConfig.enabled).toBe(true);
+    expect(zoomConfig.minZoom).toBe(0.25);
+    expect(zoomConfig.maxZoom).toBe(4.0);
+    expect(zoomConfig.wheelSensitivity).toBe(0.2);
+    expect(zoomConfig.pinchSensitivity).toBe(1.5);
+    expect(zoomConfig.smoothZoom).toBe(true);
+    expect(zoomConfig.smoothZoomFactor).toBe(0.1);
+  });
+
+  it("should provide default zoom config", () => {
+    expect(DEFAULT_ZOOM_CONFIG.enabled).toBe(true);
+    expect(DEFAULT_ZOOM_CONFIG.minZoom).toBe(0.5);
+    expect(DEFAULT_ZOOM_CONFIG.maxZoom).toBe(3.0);
+    expect(DEFAULT_ZOOM_CONFIG.wheelSensitivity).toBe(0.1);
+    expect(DEFAULT_ZOOM_CONFIG.pinchSensitivity).toBe(1.0);
+    expect(DEFAULT_ZOOM_CONFIG.smoothZoom).toBe(true);
+    expect(DEFAULT_ZOOM_CONFIG.smoothZoomFactor).toBe(0.15);
   });
 });

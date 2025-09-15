@@ -70,9 +70,9 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md h-full flex flex-col">
-      <div className="p-3 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800">Game Command</h3>
+    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg shadow-lg border border-amber-200 h-full flex flex-col">
+      <div className="p-3 border-b border-amber-300 bg-gradient-to-r from-amber-300 to-orange-100">
+        <h3 className="text-lg font-semibold text-amber-900">Game Command</h3>
       </div>
       <div className="flex-1 p-3">
         <div className="flex flex-col h-full gap-3">
@@ -83,17 +83,17 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
               countTokens(e.target.value);
             }}
             placeholder="Enter your game command..."
-            className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="flex-1 p-3 border border-amber-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-300 text-md bg-white/80 backdrop-blur-sm text-amber-900 placeholder-amber-700"
           />
           
           <div className="flex items-center justify-end gap-2">
-            <div className="flex gap-4 text-sm text-gray-600">
+            <div className="flex gap-4 text-sm text-amber-800">
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                 <span>Input: {inputTokenCount}</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span className="w-2 h-2 bg-emerald-600 rounded-full"></span>
                 <span>Used: {usedTokenCount}</span>
               </div>
             </div>
@@ -101,7 +101,7 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
             <button
               onClick={handleSendPrompt}
               disabled={!prompt.trim()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+              className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed font-medium shadow-md"
             >
               Send
             </button>

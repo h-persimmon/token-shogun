@@ -36,4 +36,4 @@ kiro apps/platform/.env # add your Bedrock API keys
 pnpm dev
 ```
 
-5. Access `localhost:3000` and enjoy TOKEN SHOGUN!!
+5. Access `localhost:3000/game` and enjoy TOKEN SHOGUN!!

@@ -35,6 +35,8 @@ export class CameraControlSystem {
   private zoomState!: ZoomState;
   private pinchState!: PinchState;
   private zoomConfig!: ZoomConfig;
+  private lastWheelTime: number = 0;
+  private wheelThrottleDelay: number = 16; // 約60FPS制限
 
   /**
    * CameraControlSystemのコンストラクタ
@@ -1215,9 +1217,11 @@ export class CameraControlSystem {
       // ピンチ距離の変化率を計算
       const distanceRatio = currentDistance / this.pinchState.initialDistance;
       
-      // 新しいズームレベルを計算（感度を適用）
+      // 新しいズームレベルを計算（感度を適用、より滑らかな変化）
       const baseZoomChange = (distanceRatio - 1.0) * this.zoomConfig.pinchSensitivity;
-      const newZoom = this.pinchState.initialZoom * (1.0 + baseZoomChange);
+      // 変化量を制限してより滑らかなズームを実現
+      const clampedZoomChange = Math.max(-0.5, Math.min(0.5, baseZoomChange));
+      const newZoom = this.pinchState.initialZoom * (1.0 + clampedZoomChange);
 
       // ズームレベルをバリデーションしてクランプ
       const clampedZoom = this.clampZoomLevel(newZoom);
@@ -2054,43 +2058,27 @@ export class CameraControlSystem {
         });
       }
 
-      // ズームアニメーションを作成（要件6.1: スムーズなズームトランジション）
+      // 単一の最適化されたアニメーションを作成（要件6.1, 6.2: スムーズなズームとパン）
       this.zoomState.activeZoomTween = this.scene.tweens.add({
         targets: this.camera,
         zoom: zoom,
-        duration: duration,
-        ease: ease,
-        onUpdate: () => {
-          // ズーム中の境界チェック
-          this.updateCameraBoundsForZoom();
-        },
-        onComplete: () => {
-          this.zoomState.activeZoomTween = undefined;
-          this.checkAnimationCompletion();
-        },
-        onStop: () => {
-          this.zoomState.activeZoomTween = undefined;
-          this.handleAnimationInterruption();
-        }
-      });
-
-      // パンアニメーションを作成（要件6.2: スムーズなフォーカスポイント移行）
-      this.zoomState.activePanTween = this.scene.tweens.add({
-        targets: this.camera,
         scrollX: clampedPosition.x,
         scrollY: clampedPosition.y,
         duration: duration,
         ease: ease,
         onUpdate: () => {
-          // カメラ状態を更新
+          // カメラ状態を効率的に更新
           this.cameraState.x = this.camera.scrollX;
           this.cameraState.y = this.camera.scrollY;
+        
         },
         onComplete: () => {
+          this.zoomState.activeZoomTween = undefined;
           this.zoomState.activePanTween = undefined;
           this.checkAnimationCompletion();
         },
         onStop: () => {
+          this.zoomState.activeZoomTween = undefined;
           this.zoomState.activePanTween = undefined;
           this.handleAnimationInterruption();
         }

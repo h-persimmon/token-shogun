@@ -30,7 +30,7 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
 
     const gameStatusInfo = await getGameStatusInfo();
     const url = "/api/order/v2";
-    const orderRequestBody: OrderV2PostRequestBody = { 
+    const orderRequestBody: OrderV2PostRequestBody = {
       prompt: currentPrompt,
       gameStatusInfo
     };
@@ -82,10 +82,18 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
               setPrompt(e.target.value);
               countTokens(e.target.value);
             }}
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (prompt.trim()) {
+                  handleSendPrompt();
+                }
+              }
+            }}
             placeholder="Enter your game command..."
             className="flex-1 p-3 border border-amber-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-300 text-md bg-white/80 backdrop-blur-sm text-amber-900 placeholder-amber-700"
           />
-          
+
           <div className="flex items-center justify-end gap-2">
             <div className="flex gap-4 text-sm text-amber-800">
               <div className="flex items-center gap-1">
@@ -97,7 +105,7 @@ export default function ChatField({ getGameStatusInfo, sendOrder, addChatMessage
                 <span>Used: {usedTokenCount}</span>
               </div>
             </div>
-            
+
             <button
               onClick={handleSendPrompt}
               disabled={!prompt.trim()}

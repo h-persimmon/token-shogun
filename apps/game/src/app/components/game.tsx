@@ -10,7 +10,7 @@ interface GameProps {
   difficulty?: 'easy' | 'medium' | 'hard' | 'very-hard';
 }
 
-export default function Game({ csvFilePath, difficulty = 'very-hard' }: GameProps) {
+export default function Game({ csvFilePath, difficulty = 'easy' }: GameProps) {
   const [isMounted, setIsMounted] = useState(false);
   const orderListenerRef = useRef<OrderListener>(new OrderListener());
 

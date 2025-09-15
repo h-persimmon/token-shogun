@@ -7,9 +7,10 @@ import { useChannelMessagingReceiver } from "../../lib/hooks/use-channel-messagi
 // Next.js Page Component
 interface GameProps {
   csvFilePath?: string;
+  difficulty?: 'easy' | 'medium' | 'hard' | 'very-hard';
 }
 
-export default function Game({ csvFilePath }: GameProps) {
+export default function Game({ csvFilePath, difficulty = 'very-hard' }: GameProps) {
   const [isMounted, setIsMounted] = useState(false);
   const orderListenerRef = useRef<OrderListener>(new OrderListener());
 
@@ -27,7 +28,7 @@ export default function Game({ csvFilePath }: GameProps) {
       width: 32 * 32,
       height: 500,
       backgroundColor: "#2E2E2E",
-      scene: new GameScene({ csvFilePath }, orderListenerRef.current),
+      scene: new GameScene({ csvFilePath, difficulty }, orderListenerRef.current),
       physics: {
         default: "arcade",
         arcade: {
@@ -49,7 +50,7 @@ export default function Game({ csvFilePath }: GameProps) {
         gameRef.current = null;
       }
     };
-  }, [isMounted, csvFilePath]);
+  }, [isMounted, csvFilePath, difficulty]);
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg shadow-lg relative">
